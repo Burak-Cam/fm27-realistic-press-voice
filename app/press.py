@@ -30,6 +30,14 @@ STYLE_POST = """Maç sonu:
 - Devre arası: "İkinci yarıya bambaşka bir takım çıktı. Devre arasında oyunculara ne söylediniz?"
 - Sonucun anlamı: "Bu deplasmanda uzun süredir kazanılamıyordu. Bu galibiyet sizin için ne ifade ediyor?"
 - Sistem: "İkinci yarıda üçlü savunmaya geçtiniz. Bu kararı neye göre verdiniz?"
+- Geç değişiklik: "Değişikliklerinizi 80. dakikadan sonra yaptınız. Neden daha erken müdahale etmediniz?"
+- Eksik kalma: "60. dakikadan sonra 10 kişi kaldınız. Oyun planınızda neyi değiştirdiniz?"
+- Golcüler: "Bugün de forvetlerinizden gol gelmedi. Bu durum sizi endişelendiriyor mu?"
+- Kaçan fırsat: "Kazansanız farkı açacaktınız. Bu beraberliği kayıp olarak mı görüyorsunuz?"
+- Sorumluluk: "Üst üste ikinci mağlubiyet geldi. Sorumluluğu nerede görüyorsunuz?"
+SONUCA GÖRE AÇI (gerçek toplantılarda gözlenen): galibiyette sonucun anlamı, seri/rekor, öne çıkan oyuncu, puan
+durumu; mağlubiyette kırılma anı, değişikliklerin zamanlaması, 10 kişi kalma, golcülerin verimi, sakatlık, sorumluluk,
+hakem; beraberlikte kaçan fırsat, puan kaybı, tartışmalı pozisyon. Toplantının İLK sorusu genelde sonucun anlamıdır.
 """
 STYLE_PRE = """Maç öncesi:
 - Kadro: "Hocam, sakat oyuncularınızın son durumu ne? Yarın kimler forma giyebilecek?"
@@ -42,6 +50,10 @@ STYLE_PRE = """Maç öncesi:
 - Rotasyon: "Üç gün içinde iki maç oynayacaksınız. Kadroda rotasyona gidecek misiniz?"
 - Rakibin yıldızı: "Rakibin golcüsü son dört maçta beş gol attı. Onu durdurmak için özel bir planınız var mı?"
 - Hakem / gündem: "Maçın hakemi açıklandı, kulübünüzden tepki geldi. Siz ne düşünüyorsunuz?"
+- Tek oyuncunun durumu: "Kaptanınız dünkü antrenmana katılmadı. Yarınki maçta forma giyebilecek mi?"
+- Hedef: "Ligde ilk dörde iki puan uzaktasınız. Bu haftaki maçı nasıl görüyorsunuz?"
+MAÇ ÖNCESİ AĞIRLIKLAR (gerçek toplantılarda): kadro/sakatlık en sık (yaklaşık dörtte bir, genelde ilk soru), sonra
+puan durumu/baskı, form ve son sonuca tepki, taktik/tekrarlayan zaaf, tek oyuncu, rakip/derbi, en sonda kulüp gündemi.
 """
 
 
@@ -125,6 +137,8 @@ Kurallar:
    puan durumu). Genel bir soruyu ("maçı nasıl yorumluyorsunuz") böyle somutlaştır; belirli konudaysa (oyuncu,
    değişiklik, kart) o konuyla ilgili veriyi kullan. Veride OLMAYAN dakika, isim, sayı ASLA uydurma. Skoru olduğu
    gibi yaz ("1-4"), farkı kendin hesaplama. Veri son oynanan maça aittir; toplantı maç öncesiyse "geçen maç" diye an.
+   Oyuncuların yanındaki kod takımını gösterir; olayı doğru takıma bağla ("teknik_direktorun_takimi" senin muhatabının
+   takımıdır, rakibin golünü ona mal etme). Anlatım satırlarını aynen kopyalama, kendi düz cümlenle söyle.
 3. ÜSLUP: 1-2 kısa cümle, en fazla 25 kelime. Önce olgu, sonra soru ("... nasıl değerlendiriyorsunuz?", "... neden
    tercih ettiniz?", "... son durumu ne?", "... olacak mı?"). Sıfat yağmuru, metafor, dramatik anlatım YOK
    ("havalara uçurdu", "acı gerçekler", "muhteşem zafer", "derinden sarstı" gibi ifadeler yok).

@@ -555,9 +555,13 @@ def _match_rows():
         {"type": "c", "t": "33:02", "s": "1 - 0", "x": "Osimhen'in şutu direkten dönüyor!"},
         {"type": "c", "t": "55:10", "s": "1 - 0", "x": "Yunus oyundan çıkıyor, yerine Barış Alper oyuna giriyor"},
         {"type": "snap", "t": "81:48", "mentality": "Aşırı Hücum Ağırlıklı", "items": [
-            ["time", "81:48"], ["ExpectedGoals", "2,77"], ["ExpectedGoals", "0,38"], ["Score", "1 - 0"],
+            ["time", "81:48"], ["ClubHomeTeamText", "FB"], ["ClubAwayTeamText", "GS"],
+            ["primary-text", "Fenerbahçe"],
+            ["FormationView", "FB Diziliş (TS)"], ["Name", "Muriqi"], ["FormationView", "GS Diziliş (TS)"],
+            ["ExpectedGoals", "2,77"], ["ExpectedGoals", "0,38"], ["Score", "1 - 0"],
             ["DugoutEvent0", "6"], ["DugoutEvent1", "55"],
-            ["", "Şut"], ["", "12"], ["", "5"], ["", "Topla Oynama"], ["", "%50"], ["", "%50"],
+            ["primary-text", "FENERBAHÇE"], ["", "Şut"], ["", "12"], ["", "Topla Oynama"], ["", "%50"],
+            ["primary-text", "GALATASARAY"], ["", "Şut"], ["", "5"], ["", "Topla Oynama"], ["", "%50"],
             ["text", "8,5"], ["", "DKF"], ["Name", "Greenwood"], ["text", "6,1"], ["", "SB"], ["Name", "Jakobs"],
             ["text", "7,0"], ["", "MF"], ["Name", "Osimhen"]]},
         {"type": "end", "t": "90:00", "s": "1 - 0"},
@@ -567,12 +571,14 @@ def _match_rows():
 def test_match_summary():
     import match
     s = match.summarize(_match_rows())
-    assert s["skor"] == "1 - 0" and s["takimlar"] == "FB-GS"
-    assert s["goller"][0]["dakika"] == "06" and "Muriqi" in s["goller"][0]["anlatim"][0]
+    assert s["skor"] == "1 - 0"
+    assert s["goller"][0]["dakika"] == "6" and "Muriqi (FB)" in s["goller"][0]["anlatim"][0]
+    assert s["takimlar"] == "Fenerbahçe (FB) - Galatasaray (GS)"
+    assert match.mark_manager_team(dict(s), "Fenerbahçe")["teknik_direktorun_takimi"] == "Galatasaray (GS)"
     assert any("direkten" in m for m in s["onemli_anlar"]) and any("oyuna giriyor" in m for m in s["onemli_anlar"])
     assert not any("kısa pas" in m for m in s["onemli_anlar"])
-    assert s["xG"] == "2,77 - 0,38" and s["istatistik"]["Şut"] == "12 - 5"
-    assert s["en_iyi_reytingler"][0] == "Greenwood 8,5" and s["en_dusuk_reytingler"][-1] == "Jakobs 6,1"
+    assert s["xG"] == "FB 2,77 - GS 0,38" and s["istatistik"]["Şut"] == "FB 12 - GS 5"
+    assert s["en_iyi_reytingler"][0] == "Greenwood (GS) 8,5" and s["en_dusuk_reytingler"][-1] == "Jakobs (GS) 6,1"
     assert s["son_mentalite"] == "Aşırı Hücum Ağırlıklı"
 
 

@@ -59,6 +59,38 @@ Ortak çıkarım: her ligde toplantı **kadro/sakatlık** ile başlar (maç önc
 sonra **tek oyuncu**, **taktik/değişiklik**, **puan durumu**, en sonda **kulüp gündemi / tartışma** gelir. Sorular kısa,
 tek olguya dayalı ve düz dillidir; muhabirin tavrı sorunun açısını belirler, kelimelerini değil.
 
+## Sayısal döküm (tam soru listesi olan toplantılar)
+Arsenal kulüp sitesindeki 3 maç öncesi (25 + 29 + 21 soru) ve 2 maç sonu (7 + 8 soru) toplantısı konularına göre sayıldı:
+
+| Maç öncesi (75 soru) | Oran |
+|---|---|
+| Kadro / sakatlık | ~%27 |
+| Puan durumu / şampiyonluk baskısı | ~%15 |
+| Form, son sonuca tepki | ~%13 |
+| Taktik (tekrarlayan zaaf, oyun planı) | ~%13 |
+| Kişisel / kulüp gündemi | ~%13 |
+| Tek oyuncu | ~%11 |
+| Rakip / derbi | ~%8 |
+
+Maç sonu (15 soru): sonucun anlamı ve performans (6), değişiklik/taktik (4), tek oyuncu (2), puan durumu (2),
+hakem/penaltı (2). İlk soru her iki toplantıda da sonucun anlamıydı.
+
+## Sonuca göre maç sonu açıları
+Serie A haftalık maç sonu özetleri, LaLiga mağlubiyet sonrası özetler, Bundesliga hakem tartışmaları ve Süper Lig
+maç sonu haberlerinden:
+- **Galibiyet:** sonucun anlamı, seri/rekor, öne çıkan oyuncu, puan durumu.
+- **Mağlubiyet:** sorumluluk, kırılma anı, değişikliklerin zamanlaması ("neden geç müdahale ettiniz"), 10 kişi
+  kalma, golcülerin verimsizliği, sakatlık, hakem/VAR, taraftar tepkisi (ıslık).
+- **Beraberlik:** kaçan fırsat ("farkı açma şansını kaçırdınız"), değişiklikler, tartışmalı penaltı pozisyonu.
+- **Ülke farkları:** Türkiye ve İspanya'da hakem soruları çok sık; İtalya'da sorumluluk ve "teknik tercih" (bir
+  oyuncunun neden oynamadığı); Almanya'da hakem sorusu çoğu zaman maçtan hemen sonra TV'ye verilen demece atıfla gelir.
+
+## Akademik / sektör notları
+- Maç sonu röportajları iki tarafın da "yüz koruduğu" yarı kalıplı konuşmalardır (Heaney 2011); hakem soruları
+  hocalar için ayrı bir müzakere sorunudur (Taylor & Francis bölümü).
+- Muhabirler uzun vadeli ilişki için zor soruları yumuşatır; "basit" sorular kalıp cevapları kırmak için sorulur.
+  Bu yüzden ton kibar ama soru somut olmalı.
+
 ## Kaynaklar (incelenen örnekler)
 - [Arteta, maç sonu basın toplantısı transkripti (Liverpool)](https://www.arsenal.com/news/every-word-from-artetas-post-liverpool-presser-aljhi7k2Bpyy)
 - [Arteta, maç öncesi basın toplantısı transkripti (Tottenham)](https://www.arsenal.com/news/every-word-artetas-pre-tottenham-presser-2)
@@ -73,3 +105,14 @@ tek olguya dayalı ve düz dillidir; muhabirin tavrı sorunun açısını belirl
 - [Mourinho ve Flick, El Clásico öncesi (Comuniate)](https://www.comuniate.com/noticias/38645/mourinho-y-flick-preparan-un-clasico-marcado-por-las-bajas-la-presion-y-los-arbitros)
 - [Marcelino, maç öncesi: eksikler, rotasyon, rekorlar, rakip (Comuniate)](https://www.comuniate.com/noticias/36189/rueda-de-prensa-de-marcelino-sobre-las-bajas-rotaciones-records-el-rival)
 - [Giráldez, maç öncesi: oyuncular, rotasyon, rakip (Futbol Fantasy)](https://www.futbolfantasy.com/laliga/noticias/134070-giraldez-habla-de-carreira-rueda-sotelo-starfelt-radu-iglesias-damian-aspas-moriba-las-rotaci)
+- [Arteta maç sonu transkripti (Forest)](https://www.arsenal.com/news/every-word-artetas-post-forest-presser-0)
+- [Arteta maç öncesi transkripti (Burnley)](https://www.arsenal.com/news/every-word-from-artetas-pre-burnley-presser-aZiQ14f7Xw7i)
+- [Arteta maç öncesi transkripti (Lille)](https://www.arsenal.com/news/every-word-from-mikel-artetas-pre-lille-presser-agEnG4Y2wWIW)
+- [Serie A 14. hafta maç sonu, tüm hocalar (Fantamaster)](https://www.fantamaster.it/conferenza-stampa-14-giornata-post-partita-seriea-2025-2026-parole-tutti-allenatori/)
+- [Íñigo Pérez, mağlubiyet sonrası (Futbol Fantasy)](https://www.futbolfantasy.com/laliga/noticias/125702-inigo-perez-analiza-la-derrota-evita-referirse-al-arbitro-y-habla-de-isi-y-pedro-diaz)
+- [Hecking, mağlubiyet sonrası hakem eleştirisi (Flashscore)](https://www.flashscore.de/news/fu-ball-bundesliga-hecking-wutet-nach-niederlage-schiedsrichter-leistung-war-unterirdisch/YoGiccSN/)
+- [Fatih Tekke, Beşiktaş maçı sonrası (Hürriyet)](https://www.hurriyet.com.tr/sporarena/fatih-tekke-bekledigimizden-iyi-oynadik-hakemden-memnun-degilim-43054287)
+- [Italiano, sakatlık ve geç değişiklik soruları (Sporx)](https://www.sporx.com/italiano-dan-miretti-icin-sakatlik-aciklamasi-SXHBQ1180283SXQ)
+- [Heaney (2011), maç sonu röportajları söylem analizi (Hermes)](https://tidsskrift.dk/her/article/download/97569/146731/200569)
+- [Basın toplantısında hakem soruları (Taylor & Francis)](https://www.taylorfrancis.com/books/9781315644974/chapters/10.4324/9781315644974-11)
+- ["Basit" soruların savunusu (Paste)](https://pastemagazine.com/soccer/in-defence-of-dumb-questions-at-managerial-press-c)

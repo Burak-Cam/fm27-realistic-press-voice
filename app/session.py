@@ -221,6 +221,7 @@ class PressSession:
         if match is None and st.get("screen") != "tunnel_interview":   # maç öncesi saha röportajında maç henüz oynanmadı
             match = match_log.recent_summary()
             if match:
+                match = match_log.mark_manager_team(match, st.get("opponent"))
                 print(f"  [maç] özet: {match.get('takimlar')} {match.get('skor', '')}, "
                       f"{len(match.get('onemli_anlar', []))} an, {len(match.get('goller', []))} gol")
         status.set("generating")

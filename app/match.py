@@ -47,7 +47,11 @@ def load(path: str) -> list[dict]:
 
 
 def _minute(t: str | None) -> str:
-    return (t or "").split(":")[0] or "?"
+    m = (t or "").split(":")[0]
+    return str(int(m)) if m.isdigit() else "?"
+
+
+_FORMATION = re.compile(r"^(\S+) Diziliş")
 
 
 def parse_snapshot(items: list[list[str]]) -> dict:
@@ -63,26 +67,65 @@ def parse_snapshot(items: list[list[str]]) -> dict:
     ev = [t for n, t in items if n.startswith("DugoutEvent") and t.strip().isdigit()]
     if ev:
         out["olay_dakikalari"] = ev
-    stats = {}
-    for i, t in enumerate(texts):
-        if t in STAT_LABELS and t not in stats:
-            vals = [v for v in texts[i + 1:i + 4] if _VALUE.match(v)][:2]
-            if vals:
-                stats[t] = " - ".join(vals)
+    # istatistik kutusu takım takım yazılır: "FENERBAHÇE", Şut, 12, İsabetli Şut, 9, ... "GALATASARAY", Şut, 6, ...
+    per_team: dict[str, list[str]] = {}
+    side = -1
+    for i, (n, t) in enumerate(items):
+        if n == "primary-text" and t.isupper() and len(t) > 2:
+            side += 1
+            continue
+        if t in STAT_LABELS and 0 <= side <= 1 and i + 1 < len(items) and _VALUE.match(items[i + 1][1]):
+            vals = per_team.setdefault(t, ["?", "?"])
+            if vals[side] == "?":
+                vals[side] = items[i + 1][1]
+    stats = {k: f"{v[0]} - {v[1]}" for k, v in per_team.items() if "?" not in v}
     if stats:
         out["istatistik"] = stats
-    ratings = []
+    # takımlar: başlıktaki kısa kodlar + istatistik bölümündeki BÜYÜK HARFLİ tam adlar (sırayla ev, deplasman)
+    codes = [t for n, t in items if n in ("ClubHomeTeamText", "ClubAwayTeamText")][:2]
+    fulls = [t for n, t in items if n == "primary-text" and t.isupper() and len(t) > 2][:2]
+    if len(codes) == 2:
+        out["ev"] = f"{fulls[0].title() if fulls else codes[0]} ({codes[0]})"
+        out["deplasman"] = f"{fulls[1].title() if len(fulls) > 1 else codes[1]} ({codes[1]})"
+    # oyuncu -> takım kodu (diziliş başlığından: "GS Diziliş (TS)")
+    team, players, ratings = None, {}, []
     for i, (n, t) in enumerate(items):
+        fm = _FORMATION.match(t)
+        if fm:
+            team = fm.group(1)
+            continue
         if n == "Name":
+            if team:
+                players[t] = team
             for _, prev in reversed(items[max(0, i - 3):i]):
                 if _RATING.match(prev):
-                    ratings.append((t, prev))
+                    ratings.append((t, prev, team))
                     break
+    if players:
+        out["_oyuncu_takim"] = players
+    if len(codes) == 2:                      # iki taraflı sayılara takım kodu: "FB 2,77 - GS 0,38" (karışmasın)
+        tag = lambda v: " - ".join(f"{c} {x}" for c, x in zip(codes, v.split(" - "))) if " - " in v else v
+        if "xG" in out:
+            out["xG"] = tag(out["xG"])
+        if "istatistik" in out:
+            out["istatistik"] = {k: tag(v) for k, v in out["istatistik"].items()}
     if ratings:
         rs = sorted(ratings, key=lambda x: float(x[1].replace(",", ".")), reverse=True)
-        out["en_iyi_reytingler"] = [f"{n} {r}" for n, r in rs[:3]]
-        out["en_dusuk_reytingler"] = [f"{n} {r}" for n, r in rs[-3:]]
+        fmt = lambda x: f"{x[0]} ({x[2]}) {x[1]}" if x[2] else f"{x[0]} {x[1]}"
+        out["en_iyi_reytingler"] = [fmt(x) for x in rs[:3]]
+        out["en_dusuk_reytingler"] = [fmt(x) for x in rs[-3:]]
     return out
+
+
+def _tag_players(text: str, players: dict) -> str:
+    """Anlatımdaki oyuncu adlarına takım kodunu ekle: 'Muriqi' -> 'Muriqi (FB)'."""
+    for name, team in sorted(players.items(), key=lambda kv: -len(kv[0])):
+        short = name.split(". ")[-1]           # "M. Asensio" -> "Asensio"
+        for key in {name, short}:
+            if len(key) >= 3 and key in text and f"{key} (" not in text:
+                text = text.replace(key, f"{key} ({team})", 1)
+                break
+    return text
 
 
 def summarize(rows: list[dict], max_moments: int = 14) -> dict:
@@ -126,10 +169,32 @@ def summarize(rows: list[dict], max_moments: int = 14) -> dict:
 
     if snaps:
         last = snaps[-1]
-        summary.update({k: v for k, v in parse_snapshot(last.get("items") or []).items() if k != "skor" or "skor" not in summary})
+        parsed = parse_snapshot(last.get("items") or [])
+        players = {}
+        for sn in snaps:                                  # tüm fotoğraflardan oyuncu-takım eşlemesi (değişikliklerle gelenler)
+            players.update(parse_snapshot(sn.get("items") or []).get("_oyuncu_takim", {}))
+        parsed.pop("_oyuncu_takim", None)
+        summary.update({k: v for k, v in parsed.items() if k != "skor" or "skor" not in summary})
         if last.get("mentality"):
             summary["son_mentalite"] = last["mentality"]
+        if players:                                       # olayları doğru takıma bağlayabilsin
+            summary["onemli_anlar"] = [_tag_players(m, players) for m in summary.get("onemli_anlar", [])]
+            for g in summary.get("goller", []):
+                g["anlatim"] = [_tag_players(x, players) for x in g.get("anlatim", [])]
+    if summary.get("ev") and summary.get("deplasman"):
+        summary["takimlar"] = f"{summary.pop('ev')} - {summary.pop('deplasman')}"
     return {k: v for k, v in summary.items() if v}
+
+
+def mark_manager_team(summary: dict, opponent: str | None) -> dict:
+    """Rakip adına göre teknik direktörün takımını işaretle (soru doğru tarafa sorulsun)."""
+    teams = (summary.get("takimlar") or "").split(" - ")
+    if opponent and len(teams) == 2:
+        opp = opponent.casefold().replace("i̇", "i")
+        mine = [t for t in teams if opp not in t.casefold().replace("i̇", "i")]
+        if len(mine) == 1:
+            summary["teknik_direktorun_takimi"] = mine[0]
+    return summary
 
 
 def recent_summary(max_age_min: float = 120) -> dict | None:
