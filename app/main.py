@@ -114,11 +114,12 @@ def cmd_check(a):
     except Exception as e:
         print(f"LLM deneme   : BAŞARISIZ -> {e}")
     try:
-        import sounddevice as sd
-        dev = sd.query_devices(kind="input")
-        print(f"Mikrofon      : {dev['name']}")
+        import devices
+        mic, spk = devices.describe()
+        print(f"Mikrofon      : {mic}")
+        print(f"Hoparlör      : {spk}")
     except Exception as e:
-        print(f"Mikrofon      : YOK/HATA -> {e}")
+        print(f"Ses cihazları : HATA -> {e}")
     try:
         from voice import synth
         p = os.path.join(tempfile.gettempdir(), "fm_check.mp3")
@@ -143,6 +144,21 @@ def cmd_check(a):
         print("Chirp TTS     : GOOGLE_TTS_API_KEY yok (edge-tts kullanılıyor)")
 
 
+def cmd_devices(a):
+    """Mikrofon ve hoparlörleri listeler; seçim FM_MIC / FM_SPEAKER ile (ad parçası ya da numara)."""
+    import sounddevice as sd
+    import devices
+    mic, spk = devices.describe()
+    print("Mikrofonlar (FM_MIC):")
+    for i, n in devices.input_devices(list(sd.query_devices()), list(sd.query_hostapis())):
+        print(f"  {i:3}  {n}")
+    print("\nHoparlör / kulaklık (FM_SPEAKER):")
+    for i, n in enumerate(devices.output_names()):
+        print(f"  {i:3}  {n}")
+    print(f"\nŞu an seçili  -> mikrofon: {mic}\n                 hoparlör: {spk}")
+    print('\nÖrnek: setx FM_MIC "Kulaklık"   setx FM_SPEAKER "Kulaklık"   (sonra yeni pencere; silmek için setx FM_MIC "")')
+
+
 def cmd_voices(a):
     """Tüm ses profillerini sırayla çalar (beğenmediklerini FM_VOICES_OFF ile kapat)."""
     import voice
@@ -157,7 +173,7 @@ def cmd_voices(a):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", nargs="?", default="live", choices=["live", "sim", "check", "voices"])
+    ap.add_argument("cmd", nargs="?", default="live", choices=["live", "sim", "check", "voices", "devices"])
     ap.add_argument("states", nargs="*", help="sim: kullanılacak durum dosyaları (varsayılan sample_states/)")
     ap.add_argument("--text", action="store_true", help="cevabı klavyeden yaz")
     ap.add_argument("--voice", action="store_true", help="sim: sesli mod (TTS + bas-konuş)")
@@ -165,7 +181,7 @@ def main():
     ap.add_argument("--match", help="maç verisi JSON (eklenti maç verisi vermeyene kadar)")
     ap.add_argument("--follow-up", type=float, default=None, help="takip sorusu olasılığı 0-1")
     a = ap.parse_args()
-    {"live": cmd_live, "sim": cmd_sim, "check": cmd_check, "voices": cmd_voices}[a.cmd](a)
+    {"live": cmd_live, "sim": cmd_sim, "check": cmd_check, "voices": cmd_voices, "devices": cmd_devices}[a.cmd](a)
 
 
 if __name__ == "__main__":

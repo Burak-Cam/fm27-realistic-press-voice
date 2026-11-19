@@ -60,6 +60,9 @@ class PressSession:
                 self.seen, self.closed = 0, False
                 self.fu_asked = set()
                 self.voicebook.new_conference()
+                reset = getattr(self.speak, "reset", None)
+                if reset:
+                    reset()                                  # çıkış cihazı yeniden seçilsin
                 self._open(st)
             if was_active and not active:
                 if self.seen and not self.closed and self._last_st:

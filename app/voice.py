@@ -83,7 +83,12 @@ def play(path: str | None, should_abort=None):
     try:
         import pygame
         if not _mixer_ready:
-            pygame.mixer.init()
+            import devices
+            name = devices.speaker_name()
+            if name:
+                pygame.mixer.init(devicename=name)
+            else:
+                pygame.mixer.init()
             _mixer_ready = True
         pygame.mixer.music.load(path)
         pygame.mixer.music.play()
@@ -103,6 +108,18 @@ def play(path: str | None, should_abort=None):
             pass
 
 
+def reset_output():
+    """Çıkış cihazını bırak: sonraki okumada yeniden seçilir (toplantı başında; sonradan takılan kulaklık için)."""
+    global _mixer_ready
+    if _mixer_ready:
+        try:
+            import pygame
+            pygame.mixer.quit()
+        except Exception:
+            pass
+        _mixer_ready = False
+
+
 def speak(text: str, should_abort=None, profile: dict | None = None):
     """Metni sesli okur (bloklar). should_abort() True olursa (soru ekranda değişti) okumayı keser."""
     if not text or (should_abort and should_abort()):
@@ -112,6 +129,7 @@ def speak(text: str, should_abort=None, profile: dict | None = None):
 
 speak.abortable = True
 speak.voiced = True        # prepare/speak ses profili alır
+speak.reset = reset_output
 speak.prepare = prepare
 speak.play = play
 
@@ -184,7 +202,8 @@ class PushToTalk:
             ev.clear()
             beep(True)
             chunks = []
-            with sd.InputStream(samplerate=SR, channels=1, dtype="float32",
+            import devices
+            with sd.InputStream(device=devices.mic_device(), samplerate=SR, channels=1, dtype="float32",
                                 callback=lambda d, *_: chunks.append(d.copy())):
                 print(f"  ● kayıt... (bitirmek için [{self.hotkey.upper()}])")
                 status.set("recording")

@@ -44,6 +44,8 @@ WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")    # GPU FM27 ile paylaşıl
 WHISPER_BEAM = int(os.getenv("WHISPER_BEAM", "1"))     # 1: ~2 sn, 5: ~12 sn (CPU, 7 sn ses), doğruluk testte aynı
 # Bas-konuş tuşu (keyboard kütüphanesi adı). Cevap beklenirken tuş oyuna GİTMEZ (suppress), diğer zamanlarda serbest.
 HOTKEY = os.getenv("FM_HOTKEY", "f8")
+MIC = os.getenv("FM_MIC", "")           # mikrofon: ad parçası ya da numara (start.bat devices); boş = Windows varsayılanı
+SPEAKER = os.getenv("FM_SPEAKER", "")   # hoparlör/kulaklık: ad parçası ya da numara; boş = Windows varsayılanı
 MAX_RECORD_SEC = 90
 BEEP = True                                            # kayıt başla/bitir sesi
 

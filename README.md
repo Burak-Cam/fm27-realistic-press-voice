@@ -46,6 +46,10 @@ setx GEMINI_API_KEY "<aistudio.google.com/apikey adresinden alınan anahtar>"
 Uygulama kendi sayacıyla ayda 500 bin, günde 40 bin karakterde durur ve edge-tts'e geçer
 (`FM_CHIRP_MONTHLY_CHARS`, `FM_CHIRP_DAILY_CHARS`). Anahtar yoksa edge-tts kullanılır.
 
+**Ses cihazları:** Varsayılan olarak Windows'un varsayılan mikrofonu ve hoparlörü kullanılır. Başka cihaz için
+`start.bat devices` ile listele, sonra adının bir parçasıyla seç: `setx FM_MIC "Kulaklık"`, `setx FM_SPEAKER "Kulaklık"`
+(yeni pencere aç). Cihaz takılı değilse varsayılana döner. Çıkış cihazı her toplantı başında yeniden seçilir.
+
 **Bas-konuş:** Varsayılan F8 (`FM_HOTKEY` ile değişir); kaydı başlatmak için bas, bitirmek için tekrar bas. Bip sesi kaydın başladığını/bittiğini bildirir.
 Cevap beklenirken tuş oyuna iletilmez. Değiştirmek için `set FM_HOTKEY=f8`.
 

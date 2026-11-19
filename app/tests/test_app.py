@@ -380,3 +380,28 @@ def test_chirp_profiles_only_when_key(monkeypatch):
     assert en and all(p["provider"] == "chirp" for p in en)
     assert {p["gender"] for p in en} == {"m", "f"}
     assert voices.moderator()["provider"] == "chirp"
+
+
+def test_device_selection():
+    import devices
+    apis = [{"name": "MME"}, {"name": "Windows DirectSound"}, {"name": "Windows WASAPI"}, {"name": "Windows WDM-KS"}]
+    devs = [
+        {"name": "Microsoft Sound Mapper - Input", "hostapi": 0, "max_input_channels": 2},
+        {"name": "Mikrofon Dizisi (2- Realtek(R)", "hostapi": 0, "max_input_channels": 2},
+        {"name": "Kulaklık Mikrofonu (HyperX Cloud", "hostapi": 0, "max_input_channels": 1},
+        {"name": "Hoparlör (Realtek)", "hostapi": 0, "max_input_channels": 0},
+        {"name": "Mikrofon Dizisi (2- Realtek(R) Audio)", "hostapi": 1, "max_input_channels": 2},
+        {"name": "Kulaklık Mikrofonu (HyperX Cloud II)", "hostapi": 1, "max_input_channels": 1},
+        {"name": "Kulaklık Mikrofonu (HyperX Cloud II)", "hostapi": 2, "max_input_channels": 1},
+        {"name": "Mikrofon (Realtek HD Audio Mic input)", "hostapi": 3, "max_input_channels": 2},
+    ]
+    names = [n for _, n in devices.input_devices(devs, apis)]
+    assert names == ["Mikrofon Dizisi (2- Realtek(R) Audio)", "Kulaklık Mikrofonu (HyperX Cloud II)"]  # tekrar yok, DirectSound
+    assert devices.pick_input(devs, apis, "hyperx") == 5
+    assert devices.pick_input(devs, apis, "4") == 4
+    assert devices.pick_input(devs, apis, "yok böyle") is None
+    assert devices.pick_input(devs, apis, "") is None
+    outs = ["Hoparlör (2- Realtek(R) Audio)", "Kulaklık (HyperX Cloud II)"]
+    assert devices.pick_output(outs, "kulaklık") == "Kulaklık (HyperX Cloud II)"
+    assert devices.pick_output(outs, "0") == outs[0]
+    assert devices.pick_output(outs, "yok") is None
