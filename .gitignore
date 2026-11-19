@@ -33,3 +33,6 @@ docs/open-questions.md
 
 # Uygulama kayıtları
 app/logs/
+
+# Kişisel ayarlar (örnek: app/settings.example.ini)
+app/settings.ini

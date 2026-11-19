@@ -1,92 +1,83 @@
-# FM27 Press Voice
+# FM27 Sesli Basın Toplantısı
 
-FM27 basın toplantılarını ve saha kenarı röportajlarını sesli hale getirir:
-1. Eklenti, gazetecinin sorusunu ve cevap seçeneklerini okur.
-2. App, soruyu maç bağlamıyla yeniden yazar ve Türkçe seslendirir.
-3. Kullanıcı bas-konuş ile cevap verir.
-4. App, cevabı oyundaki en yakın seçeneğe eşler; eklenti o seçeneği tıklar ve ekrandaki metni kullanıcının sözleriyle değiştirir.
+Football Manager 27 için sesli basın toplantısı modu. Basın toplantılarında ve saha kenarı röportajlarında:
 
-Bağlam, kararlar ve yapılacaklar için `CLAUDE.md`'ye bak. Protokol `docs/protocol.md`'de, ekran haritası `docs/ui-map.md`'de.
+- Oyunun basit sorularını, **maçta gerçekten yaşananlara** (goller, direkler, değişiklikler, kurtarışlar, kartlar)
+  dayanan, gerçek basın toplantılarındaki gibi kısa sorulara çevirir.
+- Soruyu **gazetecinin sesiyle** okur (her gazetecinin kendi sesi; toplantıyı moderatör açar ve kapatır).
+- **Sesli cevabını** (Türkçe) dinler, oyundaki en uygun cevap seçeneğine eşleyip seçer; ekranda senin cevabın yazar.
+- Oyun içinde küçük bir gösterge ne olduğunu söyler ("Gazeteci soruyu hazırlıyor", "Cevap için F8'e bas"...).
 
-| Klasör | İçerik |
-|---|---|
-| `plugin/` | BepInEx 6 IL2CPP eklentisi (C#) |
-| `app/` | Python yan uygulama (LLM, TTS, STT) |
-| `tools/InteropInspect` | Oyunun interop DLL'lerinde tip/üye arar |
-| `tools/DumpReplay` | Eklentinin okuyucusunu UI dökümleri üzerinde oyunsuz çalıştırır |
+> Durum: geliştirme sürümü (beta). Oyun dili Türkçe olmalı.
+
+## Nasıl çalışır
+- **Eklenti** (BepInEx 6 IL2CPP, `plugin/`): oyunun arayüzündeki metinleri okur (ekran görüntüsü almaz), soruyu ve
+  seçenekleri uygulamaya iletir, seçimi uygular. Maç sırasında anlatımı, skoru ve istatistikleri hafifçe kaydeder.
+- **Uygulama** (Python, `app/`): soruyu yapay zekâyla üretir (Groq / Gemini, ücretsiz katmanlar), sesi üretir
+  (edge-tts; isteğe bağlı Google Chirp 3 HD), cevabını yerelde yazıya döker (faster-whisper; ses bilgisayardan çıkmaz).
 
 ## Kurulum
-**Eklenti** (oyun kapalıyken): `plugin\build.ps1`. Varsayılan oyun yolu Steam; farklıysa `-GameDir "..."` ver.
+Gereksinimler: Windows, Football Manager 27 (Steam), Python 3.12 (python.org, "py launcher" seçili),
+derlemek için isteğe bağlı .NET SDK 8/9.
 
-**App** (bir kez):
-```
-cd app
-py -3.12 -m venv .venv
-.venv\Scripts\pip install -r requirements.txt
-setx GEMINI_API_KEY "<aistudio.google.com/apikey adresinden alınan anahtar>"
-```
-`setx`'ten sonra yeni bir terminal aç. Yedek sağlayıcı olarak `setx GROQ_API_KEY "..."` de verilebilir.
+1. **BepInEx 6 (IL2CPP, win-x64, bleeding edge)** indir: https://builds.bepinex.dev/projects/bepinex_be
+   Arşivi oyun klasörüne (`fm.exe` yanına) çıkar, oyunu **bir kez açıp kapat** (ilk açılış uzun sürer; `BepInEx\interop`
+   klasörü oluşur).
+2. Bu repoyu indir, klasörde PowerShell aç:
+   ```
+   powershell -ExecutionPolicy Bypass -File install.ps1
+   ```
+   Oyun farklı bir yerdeyse: `install.ps1 -GameDir "D:\SteamLibrary\steamapps\common\Football Manager 27"`.
+   Betik: Python ortamını kurar, eklentiyi oyuna kopyalar, `app\settings.ini` oluşturur, anahtarları sorar,
+   masaüstüne **FM27 Basın Modu** kısayolunu koyar.
 
-## Kullanım (`app\start.bat`)
-| Komut | Ne yapar |
-|---|---|
-| `start.bat check` | Anahtarlar, Gemini modelleri, mikrofon, TTS ve eklenti durumunu kontrol eder |
-| `start.bat` | Canlı mod: oyunu aç, app'i başlat, basın ekranına gir |
-| `start.bat --text` | Canlı mod, cevap mikrofon yerine klavyeden |
-| `start.bat sim` | Oyunsuz deneme: gerçek dökümlerden 11 soru, sahte eklenti, klavye |
-| `start.bat sim --voice` | Oyunsuz deneme, sesli |
-| `.venv\Scripts\python -m pytest tests` | Testler |
+## Anahtarlar (ücretsiz)
+- **Gemini** (zorunlu): https://aistudio.google.com/apikey
+- **Groq** (önerilir; sorular ~0,5 sn'de gelir, Gemini yoğun saatlerde yavaşlar): https://console.groq.com/keys
 
-**Gazeteci sesleri:** Her gazetecinin kendi sesi var (kadın/erkek, adına göre). `start.bat voices` tüm sesleri sırayla
-çalar; beğenmediklerini `setx FM_VOICES_OFF "brian,thalita"` gibi kapat. Moderatör sesi `FM_MODERATOR_VOICE`.
+Kurulum betiği sorar; elle eklemek için `setx GEMINI_API_KEY "..."` ve `setx GROQ_API_KEY "..."`, sonra yeni pencere.
+Anahtarlar sadece Windows kullanıcı ortam değişkeninde durur; hiçbir dosyaya yazılmaz.
 
-**Hızlı cevaplar (önerilir):** Ücretsiz Groq anahtarı (https://console.groq.com/keys, kart istemez):
-`setx GROQ_API_KEY "..."`. Varsa sorular Groq'tan ~0,5 sn'de gelir, Gemini yedek kalır.
+## Kullanım
+1. Masaüstündeki **FM27 Basın Modu** kısayolu: modu açar (BepInEx + sesli uygulama) ya da kapatır (FM normal açılır).
+   FM kapalıyken açarken eklentinin yeni sürümünü de kurar.
+2. FM'yi aç. Basın toplantısına / röportaja gir: soru gelir ve okunur.
+3. **F8**'e bas, cevabını söyle, tekrar **F8**. Uygulama cevabını uygun seçeneğe eşler ve seçer.
+4. Maçı maç ekranında izlersen maç sonu soruları o maçtaki anlara dayanır.
 
-**Daha iyi sesler (isteğe bağlı, Google Chirp 3 HD):** 14 farklı Türkçe gazeteci sesi. Kendi Google Cloud projende
-"Cloud Text-to-Speech API"yi etkinleştirip bir API anahtarı oluştur, sadece bu API ile sınırla ve
-`setx GOOGLE_TTS_API_KEY "..."` ile kaydet. Google'ın ücretsiz kotası aylık 1 milyon karakter (sonrası $30 / 1M).
-Uygulama kendi sayacıyla ayda 500 bin, günde 40 bin karakterde durur ve edge-tts'e geçer
-(`FM_CHIRP_MONTHLY_CHARS`, `FM_CHIRP_DAILY_CHARS`). Anahtar yoksa edge-tts kullanılır.
+## Ayarlar
+`app\settings.ini` (örnek: `app\settings.example.ini`): bas-konuş tuşu, mikrofon, hoparlör, okuma hızı, takip sorusu
+olasılığı, saklanacak kayıt sayısı vb. Ortam değişkeni varsa o kazanır.
 
-**Ses cihazları:** Varsayılan olarak Windows'un varsayılan mikrofonu ve hoparlörü kullanılır. Başka cihaz için
-`start.bat devices` ile listele, sonra adının bir parçasıyla seç: `setx FM_MIC "Kulaklık"`, `setx FM_SPEAKER "Kulaklık"`
-(yeni pencere aç). Cihaz takılı değilse varsayılana döner. Çıkış cihazı her toplantı başında yeniden seçilir.
+Yardımcı komutlar (`app` klasöründe):
+- `start.bat check`: anahtarlar, yapay zekâ bağlantısı, mikrofon, hoparlör, ses.
+- `start.bat devices`: mikrofon ve hoparlör listesi.
+- `start.bat voices`: gazeteci seslerini dinle.
+- `start.bat --text`: mikrofonsuz deneme (cevabı klavyeden yaz).
 
-**Okuma hızı:** Varsayılan +12%. Değiştirmek için `setx FM_TTS_SPEED "20"` (0 = doğal hız).
+**Daha iyi sesler (isteğe bağlı, Google Chirp 3 HD):** kendi Google Cloud projende "Cloud Text-to-Speech API"yi aç,
+yalnızca bu API ile sınırlı bir anahtar oluştur: `setx GOOGLE_TTS_API_KEY "..."`. Google'ın ücretsiz kotası aylık
+1 milyon karakter; uygulama ayda 500 bin / günde 40 bin karakterde durur ve ücretsiz seslere geçer.
 
-**Bas-konuş:** Varsayılan F8 (`FM_HOTKEY` ile değişir); kaydı başlatmak için bas, bitirmek için tekrar bas. Bip sesi kaydın başladığını/bittiğini bildirir.
-Cevap beklenirken tuş oyuna iletilmez. Değiştirmek için `set FM_HOTKEY=f8`.
+## Gizlilik ve disk
+- Ekran görüntüsü alınmaz; yapay zekâya sadece metin (soru, seçenekler, maç özeti, cevabının yazısı) gider.
+- Sesin bilgisayarında yazıya dökülür. Anahtarlar sadece ortam değişkeninde.
+- Otomatik temizlik: son 30 maç, 50 toplantı ve 15 uygulama kaydı tutulur; eski geçici dosyalar silinir.
 
-**Diğer ayarlar:**
-- App: `app/config.py` ve ortam değişkenleri (`FM_LLM_PROVIDERS`, `GEMINI_MODEL`, `WHISPER_MODEL`, `FM_FOLLOW_UP_PROB`...).
-- Eklenti: `BepInEx\config\fm27pressvoice.cfg`, `[Bridge]` bölümü (`AutoClick`, `ClickTarget`, `ClickMethod`...).
+## Sorun giderme
+- **Gösterge "uygulama kapalı" diyor:** kısayolla uygulamayı başlat (pencere açık kalmalı).
+- **Soru oyunun kendi sorusu kaldı:** yapay zekâ cevap vermedi (Groq anahtarı ekle; `start.bat check`).
+- **F8 çalışmıyor / başka tuş:** `settings.ini` → `bas_konus_tusu`.
+- **Yanlış mikrofon:** `start.bat devices`, sonra `settings.ini` → `mikrofon`.
+- **Log:** `BepInEx\LogOutput.log` (eklenti), `app\logs\live_*.log` (uygulama).
 
-## İlk oyun testi (kontrol listesi)
-1. **Eklenti yükleniyor mu:** Oyunu aç; `BepInEx\LogOutput.log` içinde `Loading [FM27 Press Voice 0.1.1]` ve `FM27PressVoice yüklendi.` olmalı.
-2. **Okuma (app kapalı):** Bir basın toplantısına gir. `BepInEx\fm27pressvoice\press_state.json` oluşmalı ve içinde
-   soru, gazeteci ve kategoriler doğru görünmeli. Log'da `Bridge` hatası olmamalı.
-3. **Uçtan uca, klavyeyle:** `start.bat --text` çalıştır.
-   - Soru balonu bizim soruyla değişmeli.
-   - Cevabı yazınca doğru seçenek tıklanmalı ve menajer balonunda senin cevabın görünmeli.
-   - Eklenti tıklamanın etkisini kontrol eder; etkisizse diğer buton/yöntem kombinasyonlarını kendisi dener
-     ve çalışanı cfg'ye yazar. Log'da `Tıklama denendi` / `tıklama doğrulandı` satırlarına bak.
-4. **Sesli:** `start.bat`. F8 ile konuş. Basın ekranında üstteki şerit ne yapıldığını gösterir.
-5. **Maç verisi:** Maç bitince istatistik ekranını aç; `ui_dump_N_mac.txt` oluşmalı. Bir ekran görüntüsü de at.
+## Geliştirme
+`app` klasöründe testler: `.venv\Scripts\python -m pytest -q`. Eklentiyi derleme: `plugin\build.ps1` (oyun kapalıyken).
+Belgeler: `docs/protocol.md` (eklenti-uygulama dosya protokolü), `docs/ui-map.md` (arayüz seçicileri),
+`docs/press-questions.md` (gerçek basın toplantısı soru araştırması).
+Repoyu klonladıktan sonra gizli anahtar engelini etkinleştir: `git config core.hooksPath .githooks`.
 
-## Modu aç/kapat (masaüstü kısayolu)
-Masaüstündeki **FM27 Basın Modu** kısayolu `mod-toggle.ps1` dosyasını çalıştırır:
-- Kapalıyken tıklanırsa BepInEx'i etkinleştirir (`doorstop_config.ini` içinde `enabled = true`) ve sesli uygulamayı ayrı pencerede başlatır.
-- Açıkken tıklanırsa uygulamayı kapatır ve BepInEx'i devre dışı bırakır. FM eklentisiz, normal açılır.
-- FM açıkken yapılan değişiklik oyun yeniden başlatılınca geçerli olur.
-- FM kapalıyken açarken, derlenmiş eklenti oyundakinden yeniyse onu da kurar (`pluginuild.ps1` gerekmez).
-Kısayolu yeniden oluşturmak için: `powershell -ExecutionPolicy Bypass -File mod-toggle.ps1 -InstallShortcut`
-
-## Katkı
-Anahtarlar sadece ortam değişkeninde tutulur (`setx GEMINI_API_KEY ...`, isteğe bağlı `setx GOOGLE_TTS_API_KEY ...`).
-Repoyu klonladıktan sonra gizli anahtar engelini etkinleştir: `git config core.hooksPath .githooks`
-
-## Otomatik temizlik
-Uygulama her açıldığında arka planda gereksiz dosyaları siler: son 30 maç kaydı, 50 toplantı kaydı ve 15 uygulama
-kaydı kalır; 24 saatten eski UI keşif dökümleri, ayar değişince eskiyen ses önbelleği ve geçici ses dosyaları silinir.
-Sınırlar: `FM_KEEP_MATCHES`, `FM_KEEP_PRESS_LOGS`, `FM_KEEP_LIVE_LOGS`, `FM_DUMP_MAX_AGE_H`.
+## Lisans
+[PolyForm Noncommercial 1.0.0](LICENSE.md): kişisel ve ticari olmayan kullanım, değiştirme ve paylaşım serbest;
+**ticari kullanım (kâr amaçlı satış, ücretli dağıtım vb.) yasak.** Football Manager, Sports Interactive / SEGA'nın
+markasıdır; bu proje onlarla bağlantılı değildir.

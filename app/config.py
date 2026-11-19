@@ -1,5 +1,7 @@
 import os
 
+import settings  # noqa: F401  (app/settings.ini -> ortam varsayılanları; config'ten önce)
+
 # ---------------- Oyun / köprü ----------------
 GAME_DIR = os.getenv("FM_GAME_DIR", r"C:\Program Files (x86)\Steam\steamapps\common\Football Manager 27")
 # Eklenti ile konuşulan klasör (docs/protocol.md). Test/simülasyon için FM_BRIDGE_DIR ile değiştirilebilir.

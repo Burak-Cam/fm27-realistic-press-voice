@@ -63,6 +63,9 @@ def cmd_live(a):
     import llm
     import status
     import cleanup
+    import settings
+    for w in settings.WARNINGS:
+        print(f"  [ayar] {w}")
     threading.Thread(target=cleanup.run_all, daemon=True).start()   # gereksiz dosyalar birikmesin
     threading.Thread(target=llm.warm_up, daemon=True).start()
     if not a.no_tts:

@@ -647,3 +647,16 @@ def test_name_hint():
     for w in ("Fenerbahçe", "Berkan", "Osimhen", "Uğurcan"):
         assert w in h
     assert "Hocam" not in h
+
+
+def test_settings_ini(tmp_path, monkeypatch):
+    import settings
+    f = tmp_path / "settings.ini"
+    f.write_text("\n".join(["[genel]", "bas_konus_tusu = f9", "mikrofon = HyperX", "[gizli]",
+                            "gemini_api_key = AQ.sahte", ""]), encoding="utf-8")
+    for k in ("FM_HOTKEY", "FM_MIC"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("FM_MIC", "Ortam")                       # ortam değişkeni kazanır
+    w = settings.load(str(f))
+    assert os.environ["FM_HOTKEY"] == "f9" and os.environ["FM_MIC"] == "Ortam"
+    assert any("gemini_api_key" in x for x in w) and "AQ.sahte" not in os.environ.values()
