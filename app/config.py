@@ -8,7 +8,9 @@ POLL_SEC = 0.3
 
 # ---------------- LLM ----------------
 # Sırayla denenir; kota/ağ hatasında sıradakine geçilir. Seçenekler: gemini | openai | ollama | mock
-PROVIDERS = [p.strip() for p in os.getenv("FM_LLM_PROVIDERS", os.getenv("FM_LLM_PROVIDER", "gemini,openai")).split(",") if p.strip()]
+# Groq anahtarı varsa önce Groq (ölçüm 2026-11-19: 0,3-1 sn; Gemini ücretsiz katman yoğunken 5-25 sn), sonra Gemini.
+_DEFAULT_PROVIDERS = "openai,gemini" if os.getenv("OPENAI_API_KEY", os.getenv("GROQ_API_KEY", "")) else "gemini,openai"
+PROVIDERS = [p.strip() for p in os.getenv("FM_LLM_PROVIDERS", os.getenv("FM_LLM_PROVIDER", _DEFAULT_PROVIDERS)).split(",") if p.strip()]
 
 GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
 # Model adları sık değişiyor: `py main.py check` ile hesabındaki modelleri listele, gerekirse GEMINI_MODEL ayarla.
@@ -19,7 +21,10 @@ GEMINI_FALLBACK_MODELS = [m.strip() for m in os.getenv(
 # Groq (OpenAI uyumlu): base=https://api.groq.com/openai/v1
 OPENAI_BASE = os.getenv("OPENAI_BASE", "https://api.groq.com/openai/v1")
 OPENAI_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GROQ_API_KEY", ""))
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "llama-3.3-70b-versatile")
+# Groq'taki modeller değişiyor (llama-3.3-70b kaldırıldı). qwen3.8-27b: Türkçesi iyi, talimata uyuyor, ~0,4 sn.
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "qwen/qwen3.8-27b")
+OPENAI_FALLBACK_MODELS = [m.strip() for m in os.getenv("OPENAI_FALLBACK_MODELS", "openai/gpt-oss-20b").split(",") if m.strip()]
+OPENAI_TIMEOUT = float(os.getenv("FM_OPENAI_TIMEOUT", "4"))   # Groq normalde <1 sn; takılırsa Gemini'ye zaman kalsın
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")

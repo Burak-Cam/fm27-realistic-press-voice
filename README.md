@@ -40,6 +40,9 @@ setx GEMINI_API_KEY "<aistudio.google.com/apikey adresinden alınan anahtar>"
 **Gazeteci sesleri:** Her gazetecinin kendi sesi var (kadın/erkek, adına göre). `start.bat voices` tüm sesleri sırayla
 çalar; beğenmediklerini `setx FM_VOICES_OFF "brian,thalita"` gibi kapat. Moderatör sesi `FM_MODERATOR_VOICE`.
 
+**Hızlı cevaplar (önerilir):** Ücretsiz Groq anahtarı (https://console.groq.com/keys, kart istemez):
+`setx GROQ_API_KEY "..."`. Varsa sorular Groq'tan ~0,5 sn'de gelir, Gemini yedek kalır.
+
 **Daha iyi sesler (isteğe bağlı, Google Chirp 3 HD):** 14 farklı Türkçe gazeteci sesi. Kendi Google Cloud projende
 "Cloud Text-to-Speech API"yi etkinleştirip bir API anahtarı oluştur, sadece bu API ile sınırla ve
 `setx GOOGLE_TTS_API_KEY "..."` ile kaydet. Google'ın ücretsiz kotası aylık 1 milyon karakter (sonrası $30 / 1M).

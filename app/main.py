@@ -105,7 +105,7 @@ def cmd_check(a):
     print(f"press_state   : {'yok (eklenti henüz yazmadı / oyun kapalı)' if st is None else ('aktif' if st.get('active') else 'pasif') + ' seq=' + str(st.get('seq'))}")
     print(f"LLM sırası    : {C.PROVIDERS}")
     print(f"GEMINI_API_KEY: {'var' if C.GEMINI_KEY else 'YOK'}  model={C.GEMINI_MODEL}")
-    print(f"OPENAI/GROQ   : {'var' if C.OPENAI_KEY else 'YOK'}  {C.OPENAI_BASE} {C.OPENAI_MODEL}")
+    print(f"GROQ/OPENAI   : {'var' if C.OPENAI_KEY else 'YOK'}  {C.OPENAI_MODEL} (yedek: {', '.join(C.OPENAI_FALLBACK_MODELS)})")
     if C.GEMINI_KEY:
         try:
             from llm import list_gemini_models

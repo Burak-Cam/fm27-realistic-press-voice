@@ -257,7 +257,8 @@ def test_closing_spoken_on_game_thank_you_bubble(tmp_path):
     s.run(stop=lambda: time.time() > end or s.closed)
     spoken = _speech(spoken)
     assert spoken[0] == "ÜRETİLEN SORU"
-    assert len(spoken) == 2 and any(w in spoken[1].lower() for w in ("teşekkür", "sağ olun"))
+    import closing
+    assert len(spoken) == 2 and spoken[1] in {x for v in closing.CLOSINGS.values() for x in v}
     assert ("question", bye["question_id"]) in io.writes
 
 

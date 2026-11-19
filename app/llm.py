@@ -24,12 +24,13 @@ def set_mock(fn):
 _http = requests.Session()   # bağlantıyı açık tut (her çağrıda TLS el sıkışması olmasın)
 
 
-def _post(url, **kw):
+def _post(url, timeout: float | None = None, **kw):
+    timeout = timeout or C.LLM_TIMEOUT
     try:
-        r = _http.post(url, timeout=C.LLM_TIMEOUT, **kw)
+        r = _http.post(url, timeout=timeout, **kw)
     except requests.ConnectionError:
         # sunucu boşta kalan bağlantıyı kapatmış olabilir ("Remote end closed connection"): yeni bağlantıyla bir kez daha
-        r = _http.post(url, timeout=C.LLM_TIMEOUT, **kw)
+        r = _http.post(url, timeout=timeout, **kw)
     if r.status_code == 429:
         raise LLMError(f"kota/oran sınırı (429): {r.text[:200]}")
     if r.status_code >= 400:
@@ -118,17 +119,50 @@ def _gemini(prompt: str, deadline: float | None = None) -> str:
         pool.shutdown(wait=False, cancel_futures=True)
 
 
-def _openai(prompt: str) -> str:
+def _reasoning(model: str) -> dict:
+    """Düşünen modellerde düşünmeyi kapat/azalt (hız). Groq: qwen3 -> none, gpt-oss -> low."""
+    if "qwen3" in model:
+        return {"reasoning_effort": "none"}
+    if "gpt-oss" in model:
+        return {"reasoning_effort": "low"}
+    return {}
+
+
+def _openai(prompt: str, deadline: float | None = None) -> str:
     if not C.OPENAI_KEY:
         raise LLMError("OPENAI_API_KEY/GROQ_API_KEY yok")
-    d = _post(
-        f"{C.OPENAI_BASE}/chat/completions",
-        headers={"Authorization": f"Bearer {C.OPENAI_KEY}"},
-        json={"model": C.OPENAI_MODEL, "temperature": 0.8,
-              "response_format": {"type": "json_object"},
-              "messages": [{"role": "user", "content": prompt}]},
-    )
-    return d["choices"][0]["message"]["content"]
+    models = [C.OPENAI_MODEL] + [m for m in C.OPENAI_FALLBACK_MODELS if m != C.OPENAI_MODEL]
+    now = time.time()
+    models = [m for m in models if _cooldown.get("oa:" + m, 0) <= now] or models
+    errors = []
+    for model in models:
+        left = (deadline - time.time()) if deadline else C.OPENAI_TIMEOUT
+        if left <= 0.3:
+            break
+        try:
+            d = _post(
+                f"{C.OPENAI_BASE}/chat/completions", timeout=min(C.OPENAI_TIMEOUT, left),
+                headers={"Authorization": f"Bearer {C.OPENAI_KEY}"},
+                json={"model": model, "temperature": 0.8, "response_format": {"type": "json_object"},
+                      "messages": [{"role": "user", "content": prompt}], **_reasoning(model)},
+            )
+            if model != models[0]:
+                print(f"  [llm] groq yedek model: {model}")
+            return d["choices"][0]["message"]["content"]
+        except requests.Timeout:
+            _cooldown["oa:" + model] = time.time() + 60
+            errors.append(f"{model}: zaman aşımı")
+        except requests.ConnectionError as e:
+            errors.append(f"{model}: bağlantı hatası ({type(e).__name__})")
+        except LLMError as e:
+            errors.append(f"{model}: {e}")
+            if re.search(r"\b(404|429|500|503)\b", str(e)):
+                _cooldown["oa:" + model] = time.time() + (86400 if re.search(r"\b404\b", str(e)) else C.MODEL_COOLDOWN)
+            elif re.search(r"\b(401|403)\b", str(e)):
+                break
+        except (KeyError, IndexError) as e:
+            errors.append(f"{model}: beklenmeyen cevap ({e})")
+    raise LLMError(" | ".join(errors) or "süre doldu")
 
 
 def _ollama(prompt: str) -> str:
@@ -160,8 +194,10 @@ def ask(prompt: str, task: str = "", budget: float | None = None) -> dict:
                 return _mock_handler(prompt, task)
             if p == "gemini":
                 text = _gemini(prompt, deadline)
+            elif p == "openai":
+                text = _openai(prompt, deadline)
             else:
-                text = {"openai": _openai, "ollama": _ollama}[p](prompt)
+                text = {"ollama": _ollama}[p](prompt)
             out = parse_json(text)
             print(f"  [llm] {p} {task} {time.time() - t0:.1f} sn")
             return out
