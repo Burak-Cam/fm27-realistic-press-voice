@@ -25,12 +25,15 @@ OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
 
 LLM_TIMEOUT = float(os.getenv("FM_LLM_TIMEOUT", "8"))        # model başına; canlı toplantıda uzun bekleme olmasın
-MODEL_COOLDOWN = float(os.getenv("FM_MODEL_COOLDOWN", "300"))  # 503/zaman aşımı veren model bu kadar sn atlanır
+MODEL_COOLDOWN = float(os.getenv("FM_MODEL_COOLDOWN", "300"))
+LLM_HEDGE_SEC = float(os.getenv("FM_LLM_HEDGE", "2.5"))         # model bu sürede cevap vermezse sıradakine de paralel sor
+QUESTION_BUDGET = float(os.getenv("FM_QUESTION_BUDGET", "9"))   # soru üretimi toplam üst sınır (aşılırsa oyunun sorusu)
+CLASSIFY_BUDGET = float(os.getenv("FM_CLASSIFY_BUDGET", "14"))  # cevap eşleme toplam üst sınır (aşılırsa yedek seçim)  # 503/zaman aşımı veren model bu kadar sn atlanır
 
 # ---------------- Ses ----------------
 TTS_VOICE = os.getenv("FM_TTS_VOICE", "tr-TR-AhmetNeural")
 TTS_RATE = os.getenv("FM_TTS_RATE", "+0%")
-TTS_SPEED = int(os.getenv("FM_TTS_SPEED", "12"))   # tüm seslere eklenen okuma hızı (yüzde; 0 = doğal, 12 = biraz hızlı)
+TTS_SPEED = int(os.getenv("FM_TTS_SPEED", "18"))   # tüm seslere eklenen okuma hızı (yüzde; 0 = doğal, 12 = biraz hızlı)
 # Kullanıcı dinledi (2026-11-19): çok dilli sesler Türkçede bozuluyor ("şampiyonluk"), tok varyasyonlar kötü.
 VOICES_OFF = os.getenv("FM_VOICES_OFF", "ahmet-tok,emel-tok,brian,william,andrew,remy,giuseppe,emma,ava,thalita")
 MODERATOR_VOICE = os.getenv("FM_MODERATOR_VOICE", "")   # boş = otomatik (Chirp varsa chirp-sadaltager, yoksa ahmet)

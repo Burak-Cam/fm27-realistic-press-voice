@@ -4,6 +4,7 @@ import re
 import time
 
 import requests
+from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 
 import config as C
 
@@ -39,34 +40,82 @@ def _post(url, **kw):
 _cooldown: dict[str, float] = {}   # model -> bu zamana kadar atla (yoğunluk/zaman aşımı)
 
 
-def _gemini(prompt: str) -> str:
+def _gemini_one(model: str, prompt: str) -> str:
+    """Tek modele istek. Zaman aşımı / yoğunluk / kota / model yok -> LLMError + bekleme listesi."""
+    try:
+        d = _post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
+            headers={"x-goog-api-key": C.GEMINI_KEY, "Content-Type": "application/json"},
+            json={"contents": [{"parts": [{"text": prompt}]}],
+                  "generationConfig": {"responseMimeType": "application/json", "temperature": 0.8}},
+        )
+        return d["candidates"][0]["content"]["parts"][0]["text"]
+    except requests.Timeout:
+        _cooldown[model] = time.time() + C.MODEL_COOLDOWN
+        raise LLMError(f"{model}: zaman aşımı ({C.LLM_TIMEOUT:g} sn)")
+    except requests.ConnectionError as e:
+        raise LLMError(f"{model}: bağlantı hatası ({type(e).__name__})")
+    except LLMError as e:
+        if re.search(r"\b(404|429|500|503)\b", str(e)):
+            _cooldown[model] = time.time() + (86400 if re.search(r"\b404\b", str(e)) else C.MODEL_COOLDOWN)
+        raise LLMError(f"{model}: {e}")
+    except (KeyError, IndexError) as e:
+        raise LLMError(f"{model}: beklenmeyen cevap ({e})")
+
+
+def _gemini(prompt: str, deadline: float | None = None) -> str:
+    """Modelleri paralel ve kademeli dener: ilk model LLM_HEDGE_SEC içinde cevap vermezse (ya da hata verirse) sıradaki
+    modele de sorulur, ilk gelen cevap kullanılır. deadline'a kadar cevap yoksa LLMError (çağıran yedeğe düşer)."""
     if not C.GEMINI_KEY:
         raise LLMError("GEMINI_API_KEY yok")
     models = [C.GEMINI_MODEL] + [m for m in C.GEMINI_FALLBACK_MODELS if m != C.GEMINI_MODEL]
     now = time.time()
-    ready = [m for m in models if _cooldown.get(m, 0) <= now] or models   # hepsi beklemedeyse yine de dene
-    last = None
-    for model in ready:
-        try:
-            d = _post(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
-                headers={"x-goog-api-key": C.GEMINI_KEY, "Content-Type": "application/json"},
-                json={"contents": [{"parts": [{"text": prompt}]}],
-                      "generationConfig": {"responseMimeType": "application/json", "temperature": 0.8}},
-            )
-            if model != C.GEMINI_MODEL:
-                print(f"  [llm] gemini yedek model: {model}")
-            return d["candidates"][0]["content"]["parts"][0]["text"]
-        except requests.Timeout as e:
-            last = LLMError(f"{model}: zaman aşımı ({C.LLM_TIMEOUT:g} sn)")
-            _cooldown[model] = time.time() + C.MODEL_COOLDOWN
-        except LLMError as e:
-            last = LLMError(f"{model}: {e}")
-            # model yok (404), yoğunluk (500/503) veya model kotası (429): sıradaki modeli dene
-            if not re.search(r"\b(404|429|500|503)\b", str(e)):
-                raise last
-            _cooldown[model] = time.time() + (86400 if re.search(r"\b404\b", str(e)) else C.MODEL_COOLDOWN)
-    raise last
+    models = [m for m in models if _cooldown.get(m, 0) <= now] or models   # hepsi beklemedeyse yine de dene
+    deadline = deadline or now + C.LLM_TIMEOUT * len(models)
+    pool = ThreadPoolExecutor(max_workers=len(models), thread_name_prefix="gemini")
+    running: dict = {}
+    errors: list[str] = []
+    nxt = 0
+
+    def launch():
+        nonlocal nxt
+        m = models[nxt]
+        nxt += 1
+        running[pool.submit(_gemini_one, m, prompt)] = m
+
+    try:
+        launch()
+        hedge_at = time.time() + C.LLM_HEDGE_SEC
+        while running or nxt < len(models):
+            now = time.time()
+            if now >= deadline:
+                break
+            if not running:                        # hepsi hata verdi ama sırada model var
+                launch()
+                hedge_at = time.time() + C.LLM_HEDGE_SEC
+                continue
+            wake = min(deadline, hedge_at) if nxt < len(models) else deadline
+            done, _ = wait(list(running), timeout=max(0.0, wake - now), return_when=FIRST_COMPLETED)
+            for f in done:
+                m = running.pop(f)
+                try:
+                    text = f.result()
+                except LLMError as e:
+                    errors.append(str(e))
+                    if "HTTP 400" in str(e) or "HTTP 401" in str(e) or "HTTP 403" in str(e):
+                        raise                    # istek/anahtar hatası: diğer modeller de aynı hatayı verir
+                    continue
+                if m != models[0]:
+                    print(f"  [llm] gemini yedek model: {m}")
+                return text
+            if nxt < len(models) and time.time() >= hedge_at:
+                launch()                           # yavaş: sıradaki modele de paralel sor
+                hedge_at = time.time() + C.LLM_HEDGE_SEC
+        if running and time.time() >= deadline:
+            errors.append(f"süre doldu ({', '.join(running.values())} cevap vermedi)")
+        raise LLMError(" | ".join(errors) or "cevap yok")
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
 
 
 def _openai(prompt: str) -> str:
@@ -94,17 +143,25 @@ def parse_json(text: str):
     return json.loads(m.group(0) if m else text)
 
 
-def ask(prompt: str, task: str = "") -> dict:
-    """Prompt gönderir, JSON parse edilmiş cevabı döndürür. Tüm sağlayıcılar başarısızsa LLMError."""
+def ask(prompt: str, task: str = "", budget: float | None = None) -> dict:
+    """Prompt gönderir, JSON parse edilmiş cevabı döndürür. budget: toplam üst süre (sn); aşılırsa LLMError
+    (çağıran yedeğe düşer). Tüm sağlayıcılar başarısızsa LLMError."""
     errors = []
+    deadline = time.time() + budget if budget else None
     for p in C.PROVIDERS:
         t0 = time.time()
+        if deadline and t0 >= deadline:
+            errors.append(f"{p}: süre doldu")
+            break
         try:
             if p == "mock":
                 if _mock_handler is None:
                     raise LLMError("mock tanımlı değil")
                 return _mock_handler(prompt, task)
-            text = {"gemini": _gemini, "openai": _openai, "ollama": _ollama}[p](prompt)
+            if p == "gemini":
+                text = _gemini(prompt, deadline)
+            else:
+                text = {"openai": _openai, "ollama": _ollama}[p](prompt)
             out = parse_json(text)
             print(f"  [llm] {p} {task} {time.time() - t0:.1f} sn")
             return out

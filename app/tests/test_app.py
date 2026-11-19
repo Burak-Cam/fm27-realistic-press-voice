@@ -499,3 +499,46 @@ def test_tts_speed_applied(monkeypatch):
     assert voice.effective({"provider": "chirp", "voice": "x", "speaking_rate": 1.0})["speaking_rate"] == 1.12
     monkeypatch.setattr(C, "TTS_SPEED", 0)
     assert voice.effective({"voice": "v", "pitch": "+0Hz", "rate": "-5%"})["rate"] == "-5%"
+
+
+def test_gemini_hedged_fast_second_model(monkeypatch):
+    """İlk model yavaşsa ikinciye paralel sorulur, ilk gelen cevap kullanılır (24 sn sıralı bekleme yok)."""
+    monkeypatch.setattr(C, "GEMINI_KEY", "test")
+    monkeypatch.setattr(C, "GEMINI_MODEL", "yavas")
+    monkeypatch.setattr(C, "GEMINI_FALLBACK_MODELS", ["hizli", "ucuncu"])
+    monkeypatch.setattr(C, "LLM_HEDGE_SEC", 0.3)
+    monkeypatch.setattr(llm, "_cooldown", {})
+
+    def one(model, prompt):
+        if model == "yavas":
+            time.sleep(3)
+            return '{"m": "yavas"}'
+        time.sleep(0.1)
+        return '{"m": "%s"}' % model
+    monkeypatch.setattr(llm, "_gemini_one", one)
+    t = time.time()
+    assert llm._gemini("p", time.time() + 5) == '{"m": "hizli"}'
+    assert time.time() - t < 1.5
+
+
+def test_gemini_deadline_and_errors(monkeypatch):
+    monkeypatch.setattr(C, "GEMINI_KEY", "test")
+    monkeypatch.setattr(C, "GEMINI_MODEL", "a")
+    monkeypatch.setattr(C, "GEMINI_FALLBACK_MODELS", ["b"])
+    monkeypatch.setattr(C, "LLM_HEDGE_SEC", 0.2)
+    monkeypatch.setattr(llm, "_cooldown", {})
+
+    def failing(model, prompt):
+        raise llm.LLMError(f"{model}: HTTP 503")
+    monkeypatch.setattr(llm, "_gemini_one", failing)
+    with pytest.raises(llm.LLMError):
+        llm._gemini("p", time.time() + 2)                      # hata verenler hızlıca biter
+
+    def slow(model, prompt):
+        time.sleep(5)
+        return "{}"
+    monkeypatch.setattr(llm, "_gemini_one", slow)
+    t = time.time()
+    with pytest.raises(llm.LLMError):
+        llm._gemini("p", time.time() + 1)                      # süre sınırında vazgeçer
+    assert time.time() - t < 2

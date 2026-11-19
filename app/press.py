@@ -6,6 +6,7 @@ korur (seçenekler hâlâ anlamlı kalsın), sadece maç verisi ve gazeteci kiş
 import json
 import re
 
+import config as C
 from llm import ask, LLMError
 
 EVENTS = ["manager_intro", "pre_match", "post_match", "player_signing", "other"]
@@ -108,12 +109,13 @@ Yapılacak:
 
 Sadece JSON döndür: {{"question": "...", "event": "..."}}"""
     try:
-        r = ask(prompt, task="question")
+        r = ask(prompt, task="question", budget=C.QUESTION_BUDGET)
         q = (r.get("question") or "").strip()
         if speaks_as_fan(q):                       # taraftar ağzı: bir kez düzelttir
             print(f"  [press] 'biz' dili, düzeltiliyor: {q}")
             fix = ask(prompt + f'\n\nÖNCEKİ DENEMEN HATALIYDI ("{q}"): kulüp adına "biz/bizim/-ımız" dili kullandın. '
-                      'Tarafsız muhabir olarak "siz/takımınız" diliyle yeniden yaz. Sadece JSON.', task="question")
+                      'Tarafsız muhabir olarak "siz/takımınız" diliyle yeniden yaz. Sadece JSON.', task="question",
+                      budget=4)
             q2 = (fix.get("question") or "").strip()
             if q2 and not speaks_as_fan(q2):
                 q, r = q2, fix
@@ -175,7 +177,7 @@ Yapılacak:
 Sadece JSON döndür: {{"category_index": 0, "option_index": 0, "display_text": "...", "follow_up": null, "reason": "kısa gerekçe"}}"""
     cats = {c["index"]: c for c in state.get("categories", [])}
     try:
-        r = ask(prompt, task="classify")
+        r = ask(prompt, task="classify", budget=C.CLASSIFY_BUDGET)
         ci, oi = int(r.get("category_index")), int(r.get("option_index", 0))
         if ci not in cats or not cats[ci].get("options"):
             raise LLMError(f"geçersiz category_index {ci}")
