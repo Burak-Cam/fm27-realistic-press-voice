@@ -619,3 +619,23 @@ def test_goals_from_commentary_without_scorer():
     assert [(x["dakika"], x["takim"], x["golcu"]) for x in g] == [
         ("2", "Galatasaray", "bilinmiyor (tahmin etme)"), ("70", "Fenerbahçe", "bilinmiyor (tahmin etme)")]
     assert not any("Sallai" in str(x) for x in g)
+
+
+def test_cleanup(tmp_path, monkeypatch):
+    import cleanup
+    bridge = tmp_path / "bridge"; (bridge / "matches").mkdir(parents=True)
+    logs = tmp_path / "logs"; logs.mkdir()
+    for i in range(5):
+        f = bridge / "matches" / f"match_{i}.jsonl"; f.write_text("x" * 100); os.utime(f, (1000 + i, 1000 + i))
+    old_dump = bridge / "20261101_120000"; old_dump.mkdir(); (old_dump / "ui_dump_1.txt").write_text("y" * 500)
+    os.utime(old_dump, (1000, 1000))
+    new_dump = bridge / "29991231_120000"; new_dump.mkdir()
+    keep_other = bridge / "press_state.json"; keep_other.write_text("{}")
+    monkeypatch.setattr(C, "BRIDGE_DIR", str(bridge))
+    monkeypatch.setattr(cleanup, "LOG_DIR", str(logs))
+    monkeypatch.setattr(cleanup, "KEEP_MATCHES", 2)
+    monkeypatch.setattr(cleanup, "_stale_tts_cache", lambda: 0)
+    freed = cleanup.run_all(verbose=False)
+    assert sorted(os.listdir(bridge / "matches")) == ["match_3.jsonl", "match_4.jsonl"]
+    assert not old_dump.exists() and new_dump.exists() and keep_other.exists()
+    assert freed >= 300 + 500

@@ -85,3 +85,8 @@ Kısayolu yeniden oluşturmak için: `powershell -ExecutionPolicy Bypass -File m
 ## Katkı
 Anahtarlar sadece ortam değişkeninde tutulur (`setx GEMINI_API_KEY ...`, isteğe bağlı `setx GOOGLE_TTS_API_KEY ...`).
 Repoyu klonladıktan sonra gizli anahtar engelini etkinleştir: `git config core.hooksPath .githooks`
+
+## Otomatik temizlik
+Uygulama her açıldığında arka planda gereksiz dosyaları siler: son 30 maç kaydı, 50 toplantı kaydı ve 15 uygulama
+kaydı kalır; 24 saatten eski UI keşif dökümleri, ayar değişince eskiyen ses önbelleği ve geçici ses dosyaları silinir.
+Sınırlar: `FM_KEEP_MATCHES`, `FM_KEEP_PRESS_LOGS`, `FM_KEEP_LIVE_LOGS`, `FM_DUMP_MAX_AGE_H`.
