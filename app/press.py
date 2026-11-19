@@ -17,6 +17,28 @@ SCREEN_TR = {
 }
 
 
+# Gerçek basın toplantısı kalıpları (docs/press-questions.md). Kaynaklardan kopyalanmadı, kalıba göre yazıldı.
+STYLE_POST = """Maç sonu:
+- Genel performans: "Hocam, ilk yarıyla ikinci yarı arasında büyük fark vardı. Devre arasında ne değişti?"
+- Kırılma anı: "67. dakikadaki golden sonra oyun koptu. O bölümde neler oldu?"
+- Tek oyuncu: "Greenwood bugün sağ kanatta çok etkiliydi. Ona karşı neden önlem alamadınız?"
+- İstatistik: "Rakibe sadece bir isabetli şut izni verdiniz. Savunma organizasyonundan memnun musunuz?"
+- Değişiklik: "Yunus'u 55. dakikada oyundan aldınız. Bu değişikliğin sebebi neydi?"
+- Hakem: "30. dakikadaki pozisyonda penaltı beklediniz mi?"
+- Seri / puan: "Bu sonuçla liderle fark üç puana indi. Yarışı nasıl görüyorsunuz?"
+- Sakatlık: "Osimhen ikinci yarıda topallayarak çıktı. Durumu hakkında bilgi var mı?"
+"""
+STYLE_PRE = """Maç öncesi:
+- Kadro: "Hocam, sakat oyuncularınızın son durumu ne? Yarın kimler forma giyebilecek?"
+- Rakip: "Rakibiniz son beş maçta yenilmedi. En çok hangi yönlerine dikkat ediyorsunuz?"
+- Kötü sonuç sonrası: "Geçen haftaki mağlubiyetten sonra takımın moral durumu nasıl?"
+- Derbi: "Deplasmanda derbi oynayacaksınız. Atmosferin oyuncular üzerinde etkisi olur mu?"
+- Oyuncu kullanımı: "Genç oyuncunuz son maçlarda süre bulamıyor. Yarın şans verecek misiniz?"
+- Tekrarlayan zaaf: "Son maçlarda hep son 15 dakikada gol yediniz. Bunun üzerine çalıştınız mı?"
+- Baskı: "Zirvede fark açılıyor. Bu maç sizin için final niteliğinde mi?"
+"""
+
+
 def _options_text(state: dict) -> str:
     lines = []
     for c in state.get("categories", []):
@@ -64,9 +86,13 @@ def generate_question(state: dict, match: dict | None = None, history: list[dict
     introduce: bu gazetecinin bu toplantıdaki ilk sorusu (kısa tanıtımla başlar)."""
     game_q = state.get("game_question") or ""
     prev = state.get("previous_npc_bubbles") or []
+    post = bool(match) or state.get("screen") == "post_match_tunnel_interview" or state.get("event_hint") == "post_match"
+    pre = state.get("screen") == "tunnel_interview" or state.get("event_hint") == "pre_match"
+    examples = STYLE_POST if post else STYLE_PRE if pre else STYLE_POST + "\n" + STYLE_PRE
     prompt = f"""GOREV: SORU
-Football Manager kariyerinde Türkçe bir {SCREEN_TR.get(state.get('screen'), 'basın etkinliği')} canlandırıyoruz.
-Sen şu gazetecisin: {_journalist_text(state)}.
+Football Manager kariyerinde Türkçe bir {SCREEN_TR.get(state.get('screen'), 'basın etkinliği')} var. Sen gerçek bir Türk spor
+muhabirisin: {_journalist_text(state)}. Görevin oyunun sorusunu, GERÇEK basın toplantılarında sorulan bir soru gibi
+yeniden yazmak. Rol yapma, tiyatro yapma: gerçek muhabirler kısa konuşur, bir olgu söyler, soruyu sorar.
 Teknik direktör: {state.get('manager_name') or 'menajer'}. {('Rakip: ' + state['opponent'] + '. ') if state.get('opponent') else ''}{('Organizasyon: ' + state['competition'] + '.') if state.get('competition') else ''}
 Soru sayacı: {state.get('question_index') or '-'}/{state.get('question_total') or '-'}.
 
@@ -84,33 +110,26 @@ Oyun ekranından bağlam (tarih, sonraki maç, son haber; soruyla ilgisizse kull
 Bu toplantıda şimdiye kadar:
 {_history_text(history or [])}
 
-Yapılacak:
-1. Orijinal sorunun KONUSUNU ve NİYETİNİ koruyarak soruyu yeniden yaz; yukarıdaki cevap seçenekleri senin sorun için de
-   anlamlı kalmalı. Konuyu değiştirme, yeni konu açma.
-2. MAÇ VERİSİ varsa soruyu GERÇEKÇİ yap: oyunun sorusu genelse (maçı, sonucu, performansı, duyguları yorumlama) onu
-   maçtan TEK somut ana bağla: dakika + olay + oyuncu (örn. "67. dakikadaki golden sonra...", "xG'niz 0,38'de kaldı",
-   "Greenwood'u durduramadınız"). Oyunun sorusu belirli bir konudaysa (oyuncu, değişiklik, kart, taktik) o konuyla ilgili
-   veriyi kullan. Cevap seçenekleri yine anlamlı kalmalı. Veride OLMAYAN ayrıntı (dakika, isim, sayı) ASLA uydurma.
-   Veri son oynanan maça aittir; toplantı maç öncesiyse ancak "geçen maç" diye an. Veri yoksa ekleme.
-   Skoru olduğu gibi yaz ("1-4"); gol farkı, toplam gibi şeyleri kendin hesaplayıp söyleme.
-3. TON: Sen profesyonel, saygılı bir spor muhabirisin, taraftar DEĞİLSİN. Kulüple duygusal bağın yok: ASLA "biz",
-   "bizi", "takımımız", "aldığımız skor", "oyunumuz" deme; takım için "takımınız", "siz" de. Ruh hali gazetecinin
-   teknik direktöre karşı TAVRIDIR (üzgün = sonuca mesafeli/eleştirel bakan muhabir, kendisi üzülmüş taraftar değil).
-   Ruh hali soruya sadece hafif bir renk katar:
-   - olumlu ruh hali: sıcak ve meraklı ama ölçülü. Tezahürat ve abartı YOK ("tebrik ederim", "havalara uçurdu",
-     "muhteşem zafer" gibi ifadeler kullanma).
-   - nötr: tarafsız, bilgi isteyen.
-   - olumsuz / üzgün / karamsar: sorgulayıcı ve mesafeli ama KİBAR. Eleştiri somut, makul ve yapıcı olsun
-     ("geliştirilmesi gereken yönler", "dikkat çeken konular" gibi). Galibiyet sonrası önce sonucu kabul et, maçı
-     kötüleyen yargılar ("kısır", "tutku eksikliği", "maskeledi", "endişe verici") kurma; merak eden bir soru sor.
-   ASLA hakaret, alay, iğneleme, suçlama, provokasyon yok. Teknik direktöre söylemediği sözleri ya da yapmadığı şeyleri
-   ATFETME ("övüp duruyorsunuz", "yine kaçamak cevap veriyorsunuz" gibi). Sonuçla çelişen felaket dili kullanma.
-4. {('Bu senin bu toplantıdaki İLK sorun: çok kısa bir tanıtımla başla, örn. "' + _intro_example(state) + '" sonra soruyu sor.') if introduce else 'Kendini TANITMA (isim veya yayın organı söyleme); gerekiyorsa sadece "Hocam" diye hitap et.'}
-5. Teknik direktör bu toplantıda bir soruyu cevaplamak istemediyse o konunun üstüne gitme. Oyun soruyu yineliyorsa
-   ("Sorumu yineliyorum" gibi) asıl soruyu kısa ve nazikçe tekrar sor ("Hocam, soruyu bir kez daha sorayım: ..."),
-   önceki cevabı yorumlama, ısrarcı ya da suçlayıcı olma.
-6. Doğal, konuşma dilinde, sesli okunacak Türkçe; 1-2 cümle, en fazla 30 kelime. Etiket, emoji, tırnak yok.
-7. Etkinlik türünü tahmin et: {EVENTS} (yeni kulübe tanıtım = manager_intro, transfer tanıtımı = player_signing).
+GERÇEK BASIN TOPLANTISI SORULARI (üslup örnekleri; kalıbı al, kelimesi kelimesine kopyalama):
+{examples}
+
+Kurallar:
+1. KONU: orijinal sorunun konusunu ve niyetini koru; cevap seçenekleri senin sorun için de anlamlı kalmalı.
+2. SOMUT OLGU: maç verisi varsa soruyu oradan TEK bir somut olguya bağla (dakika + olay + oyuncu, istatistik, seri,
+   puan durumu). Genel bir soruyu ("maçı nasıl yorumluyorsunuz") böyle somutlaştır; belirli konudaysa (oyuncu,
+   değişiklik, kart) o konuyla ilgili veriyi kullan. Veride OLMAYAN dakika, isim, sayı ASLA uydurma. Skoru olduğu
+   gibi yaz ("1-4"), farkı kendin hesaplama. Veri son oynanan maça aittir; toplantı maç öncesiyse "geçen maç" diye an.
+3. ÜSLUP: 1-2 kısa cümle, en fazla 25 kelime. Önce olgu, sonra soru ("... nasıl değerlendiriyorsunuz?", "... neden
+   tercih ettiniz?", "... son durumu ne?", "... olacak mı?"). Sıfat yağmuru, metafor, dramatik anlatım YOK
+   ("havalara uçurdu", "acı gerçekler", "muhteşem zafer", "derinden sarstı" gibi ifadeler yok).
+4. TAVIR: ruh hali gazetecinin teknik direktöre bakış AÇISIDIR, duygusu değil. Olumlu muhabir iyi giden bir şeyi,
+   eleştirel muhabir aksayan bir şeyi sorar; ikisi de düz ve kibar konuşur. Kulüp adına "biz/takımımız" deme,
+   "takımınız/siz" de. Hakaret, alay, suçlama, provokasyon ve söylenmemiş sözü atfetmek yok.
+5. {('Bu senin bu toplantıdaki İLK sorun: kısa bir açılışla başla. Türkiye usulü: "' + _intro_example(state) + '" gibi; galibiyet sonrasıysa "Hocam tebrikler", mağlubiyet sonrasıysa "Hocam geçmiş olsun" da diyebilirsin. Sonra doğrudan soru.') if introduce else 'Kendini TANITMA, selamlama yapma; gerekiyorsa sadece "Hocam" diye başla.'}
+6. Teknik direktör bu toplantıda bir soruyu cevaplamak istemediyse o konunun üstüne gitme. Oyun soruyu yineliyorsa
+   ("Sorumu yineliyorum") asıl soruyu kısaca, nazikçe tekrar sor; önceki cevabı yorumlama.
+7. Sesli okunacak düz Türkçe; etiket, emoji, tırnak yok.
+8. Etkinlik türünü tahmin et: {EVENTS} (yeni kulübe tanıtım = manager_intro, transfer tanıtımı = player_signing).
 
 Sadece JSON döndür: {{"question": "...", "event": "..."}}"""
     try:
