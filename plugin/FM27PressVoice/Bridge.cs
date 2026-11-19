@@ -82,6 +82,9 @@ internal static class Bridge
         var root = GetRoot();
         if (root == null) { WriteInactive(); return; }
 
+        try { MatchRecorder.Tick(root); }
+        catch (Exception e) { Plugin.Instance.Log.LogWarning($"[maç] {e.GetType().Name}: {e.Message}"); }
+
         var panel = PressReader.FindPanel(root, out var screen, out var hint);
         if (panel == null)
         {

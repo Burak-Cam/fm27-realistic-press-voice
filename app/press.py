@@ -76,7 +76,7 @@ Oyunun orijinal sorusu: "{game_q}"
 Oyundaki cevap seçenekleri (teknik direktör bunlardan birine denk gelen bir cevap verecek):
 {_options_text(state)}
 
-Maç verisi (yoksa kullanma, ASLA veri uydurma):
+Maç verisi (son oynanan maç; yoksa kullanma, ASLA veri uydurma):
 {json.dumps(match, ensure_ascii=False) if match else '(veri yok)'}
 Oyun ekranından bağlam (tarih, sonraki maç, son haber; soruyla ilgisizse kullanma):
 {json.dumps(state.get('context'), ensure_ascii=False) if state.get('context') else '(yok)'}
@@ -87,7 +87,11 @@ Bu toplantıda şimdiye kadar:
 Yapılacak:
 1. Orijinal sorunun KONUSUNU ve NİYETİNİ koruyarak soruyu yeniden yaz; yukarıdaki cevap seçenekleri senin sorun için de
    anlamlı kalmalı. Konuyu değiştirme, yeni konu açma.
-2. Uygunsa maç verisinden somut bir ayrıntı ekle (skor, gol dakikası, xG, şut, kart, form, sıralama). Veride yoksa ekleme.
+2. MAÇ VERİSİ varsa soruyu GERÇEKÇİ yap: oyunun sorusu genelse (maçı, sonucu, performansı, duyguları yorumlama) onu
+   maçtan TEK somut ana bağla: dakika + olay + oyuncu (örn. "67. dakikadaki golden sonra...", "xG'niz 0,38'de kaldı",
+   "Greenwood'u durduramadınız"). Oyunun sorusu belirli bir konudaysa (oyuncu, değişiklik, kart, taktik) o konuyla ilgili
+   veriyi kullan. Cevap seçenekleri yine anlamlı kalmalı. Veride OLMAYAN ayrıntı (dakika, isim, sayı) ASLA uydurma.
+   Veri son oynanan maça aittir; toplantı maç öncesiyse ancak "geçen maç" diye an. Veri yoksa ekleme.
    Skoru olduğu gibi yaz ("1-4"); gol farkı, toplam gibi şeyleri kendin hesaplayıp söyleme.
 3. TON: Sen profesyonel, saygılı bir spor muhabirisin, taraftar DEĞİLSİN. Kulüple duygusal bağın yok: ASLA "biz",
    "bizi", "takımımız", "aldığımız skor", "oyunumuz" deme; takım için "takımınız", "siz" de. Ruh hali gazetecinin

@@ -7,6 +7,7 @@ import time
 from datetime import datetime
 
 import closing
+import match as match_log
 import config as C
 import press
 import status
@@ -217,6 +218,11 @@ class PressSession:
         print(f"  Oyunun sorusu: {st.get('game_question')}")
 
         match = st.get("match") or self.match
+        if match is None and st.get("screen") != "tunnel_interview":   # maç öncesi saha röportajında maç henüz oynanmadı
+            match = match_log.recent_summary()
+            if match:
+                print(f"  [maç] özet: {match.get('takimlar')} {match.get('skor', '')}, "
+                      f"{len(match.get('onemli_anlar', []))} an, {len(match.get('goller', []))} gol")
         status.set("generating")
         jn = (st.get("journalist") or {}).get("name")
         first = bool(jn) and jn not in self.introduced

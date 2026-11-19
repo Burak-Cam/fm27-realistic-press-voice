@@ -543,3 +543,55 @@ def test_gemini_deadline_and_errors(monkeypatch):
     with pytest.raises(llm.LLMError):
         llm._gemini("p", time.time() + 1)                      # süre sınırında vazgeçer
     assert time.time() - t < 2
+
+
+def _match_rows():
+    return [
+        {"type": "start", "teams": "FB-GS"},
+        {"type": "score", "t": "00:01", "s": "0 - 0"},
+        {"type": "c", "t": "05:40", "s": "0 - 0", "x": "Greenwood kısa pas veriyor, Kanté orada"},
+        {"type": "score", "t": "06:12", "s": "1 - 0"},
+        {"type": "c", "t": "06:12", "s": "1 - 0", "x": "GOL! Muriqi kafa vuruşuyla ağları sarsıyor!"},
+        {"type": "c", "t": "33:02", "s": "1 - 0", "x": "Osimhen'in şutu direkten dönüyor!"},
+        {"type": "c", "t": "55:10", "s": "1 - 0", "x": "Yunus oyundan çıkıyor, yerine Barış Alper oyuna giriyor"},
+        {"type": "snap", "t": "81:48", "mentality": "Aşırı Hücum Ağırlıklı", "items": [
+            ["time", "81:48"], ["ExpectedGoals", "2,77"], ["ExpectedGoals", "0,38"], ["Score", "1 - 0"],
+            ["DugoutEvent0", "6"], ["DugoutEvent1", "55"],
+            ["", "Şut"], ["", "12"], ["", "5"], ["", "Topla Oynama"], ["", "%50"], ["", "%50"],
+            ["text", "8,5"], ["", "DKF"], ["Name", "Greenwood"], ["text", "6,1"], ["", "SB"], ["Name", "Jakobs"],
+            ["text", "7,0"], ["", "MF"], ["Name", "Osimhen"]]},
+        {"type": "end", "t": "90:00", "s": "1 - 0"},
+    ]
+
+
+def test_match_summary():
+    import match
+    s = match.summarize(_match_rows())
+    assert s["skor"] == "1 - 0" and s["takimlar"] == "FB-GS"
+    assert s["goller"][0]["dakika"] == "06" and "Muriqi" in s["goller"][0]["anlatim"][0]
+    assert any("direkten" in m for m in s["onemli_anlar"]) and any("oyuna giriyor" in m for m in s["onemli_anlar"])
+    assert not any("kısa pas" in m for m in s["onemli_anlar"])
+    assert s["xG"] == "2,77 - 0,38" and s["istatistik"]["Şut"] == "12 - 5"
+    assert s["en_iyi_reytingler"][0] == "Greenwood 8,5" and s["en_dusuk_reytingler"][-1] == "Jakobs 6,1"
+    assert s["son_mentalite"] == "Aşırı Hücum Ağırlıklı"
+
+
+def test_match_summary_used_after_match(tmp_path, monkeypatch):
+    import match
+    f = tmp_path / "match_20261119_1600_FB-GS.jsonl"
+    f.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in _match_rows()), encoding="utf-8")
+    monkeypatch.setattr(match, "MATCH_DIR", str(tmp_path))
+    prompts = []
+    llm.set_mock(lambda p, t: prompts.append(p) or ({"question": "S", "event": "post_match"} if t == "question" else
+                 {"category_index": 0, "option_index": 0, "display_text": "D", "follow_up": None}))
+    st = dict(load_states()[0], active=True, ready=True, screen="post_match_tunnel_interview", match=None)
+    s = PressSession(_FakeIO(st), lambda *a, **k: None, lambda abort: "cevap", follow_up_prob=0,
+                     log_dir=str(tmp_path / "logs"))
+    s.handle(st)
+    assert "direkten" in prompts[0] and "2,77" in prompts[0]
+    st2 = dict(st, screen="tunnel_interview", question_id="x2")                 # maç öncesi: kullanılmaz
+    prompts.clear()
+    s2 = PressSession(_FakeIO(st2), lambda *a, **k: None, lambda abort: "cevap", follow_up_prob=0,
+                      log_dir=str(tmp_path / "logs2"))
+    s2.handle(st2)
+    assert "direkten" not in prompts[0]

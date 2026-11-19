@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace FM27PressVoice;
 
-[BepInPlugin("fm27pressvoice", "FM27 Press Voice", "0.3.1")]
+[BepInPlugin("fm27pressvoice", "FM27 Press Voice", "0.4.0")]
 public class Plugin : BasePlugin
 {
     internal static Plugin Instance;
@@ -35,10 +35,15 @@ public class Plugin : BasePlugin
     internal static ConfigEntry<bool> OverlayBadge;
     internal static ConfigEntry<float> OverlayBadgeSeconds;
 
+    // Maç kaydı + performans ölçümü
+    internal static ConfigEntry<bool> MatchEnabled;
+    internal static ConfigEntry<float> MatchSnapshotSec;
+    internal static ConfigEntry<bool> PerfLog;
+
     public override void Load()
     {
         Instance = this;
-        DumpEnabled = Config.Bind("UiDump", "Enabled", true, "Basın ekranlarında UI ağacını dosyaya dök (keşif).");
+        DumpEnabled = Config.Bind("UiDump", "Enabled", false, "Basın/maç ekranlarında UI ağacını dosyaya dök (keşif; ağır, sadece geliştirme için).");
         TriggerText = Config.Bind("UiDump", "TriggerText", "Soru (|Röportaj",
             "Ekrandaki herhangi bir metin bunlardan birini içeriyorsa UI ağacı dosyaya dökülür (| ile ayır).");
         IntervalSec = Config.Bind("UiDump", "IntervalSec", 2f, "Kontrol aralığı (saniye).");
@@ -63,6 +68,20 @@ public class Plugin : BasePlugin
         OverlayBadge = Config.Bind("Overlay", "ShowBadge", true, "Oyun açılınca sol altta kısa süre 'Sesli Basın' rozeti göster.");
         OverlayBadgeSeconds = Config.Bind("Overlay", "BadgeSeconds", 12f, "Rozetin açılışta görünme süresi (sn). App açılıp kapanınca da kısa süre görünür.");
 
+        MatchEnabled = Config.Bind("Match", "Enabled", true,
+            "Maç ekranında anlatım/skor/dakika ve ara ara istatistik kaydet (gerçekçi maç sonu soruları için). Hafiftir.");
+        MatchSnapshotSec = Config.Bind("Match", "SnapshotSec", 90f, "İstatistik/reyting fotoğrafı aralığı (gerçek saniye).");
+        PerfLog = Config.Bind("Debug", "PerfLog", true, "Eklentinin kare başına harcadığı süreyi dakikada bir log'a yaz.");
+
+        // Tek seferlik geçiş: keşif dökümleri (ağır, büyük dosyalar) artık varsayılan kapalı.
+        var cfgVersion = Config.Bind("Internal", "ConfigVersion", 1, "Ayar geçişleri için (elle değiştirme).");
+        if (cfgVersion.Value < 2)
+        {
+            DumpEnabled.Value = false;
+            cfgVersion.Value = 2;
+            Log.LogInfo("Ayar geçişi: UiDump keşif dökümleri kapatıldı (gerekirse [UiDump] Enabled=true).");
+        }
+
         ClassInjector.RegisterTypeInIl2Cpp<Ticker>();
         var go = new GameObject("FM27PressVoiceTicker");
         UnityEngine.Object.DontDestroyOnLoad(go);
@@ -80,7 +99,33 @@ public class Ticker : MonoBehaviour
     static float _nextDump, _nextBridge;
     static int _bridgeErrors;
 
+    static readonly System.Diagnostics.Stopwatch _sw = new();
+    static double _perfTotal, _perfMax;
+    static int _perfFrames;
+    static float _nextPerf = 60f;
+
     void Update()
+    {
+        _sw.Restart();
+        try { Step(); }
+        finally
+        {
+            _sw.Stop();
+            double ms = _sw.Elapsed.TotalMilliseconds;
+            _perfTotal += ms; _perfFrames++;
+            if (ms > _perfMax) _perfMax = ms;
+            float t = Time.unscaledTime;
+            if (t >= _nextPerf)
+            {
+                if (Plugin.PerfLog.Value && _perfFrames > 0)
+                    Plugin.Instance.Log.LogInfo($"[perf] son {_perfFrames} kare: ortalama {_perfTotal / _perfFrames:0.000} ms, en fazla {_perfMax:0.0} ms");
+                _perfTotal = _perfMax = 0; _perfFrames = 0;
+                _nextPerf = t + 60f;
+            }
+        }
+    }
+
+    void Step()
     {
         float now = Time.unscaledTime;
 
