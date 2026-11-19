@@ -154,6 +154,7 @@ Kurallar:
    gibi yaz ("1-4"), farkı kendin hesaplama. Veri son oynanan maça aittir; toplantı maç öncesiyse "geçen maç" diye an.
    Oyuncuların yanındaki kod takımını gösterir; olayı doğru takıma bağla ("teknik_direktorun_takimi" senin muhatabının
    takımıdır, rakibin golünü ona mal etme). Anlatım satırlarını aynen kopyalama, kendi düz cümlenle söyle.
+   Golcü "bilinmiyor" ise golü oyuncuya bağlama, takım ve dakikayla an ("2. dakikadaki golünüz"); asist yapanı golcü sanma.
 3. ÜSLUP: 1-2 kısa cümle, en fazla 25 kelime. Önce olgu, sonra soru ("... nasıl değerlendiriyorsunuz?", "... neden
    tercih ettiniz?", "... son durumu ne?", "... olacak mı?"). Sıfat yağmuru, metafor, dramatik anlatım YOK
    ("havalara uçurdu", "acı gerçekler", "muhteşem zafer", "derinden sarstı" gibi ifadeler yok).

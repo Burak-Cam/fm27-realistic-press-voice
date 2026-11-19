@@ -14,12 +14,11 @@ import config as C
 MATCH_DIR = os.path.join(C.BRIDGE_DIR, "matches")
 
 # Anlatımda "önemli an" sayılacak kalıplar (küçük harf). İlk kayıtlarla genişletilecek.
-KEYWORDS = [
-    "gol", "golü", "ağlar", "file", "direk", "üst direk", "yan direk", "kurtar", "kurtarış", "çıkardı", "penaltı",
-    "kırmızı kart", "sarı kart", "ihraç", "sakat", "sakatlık", "oyuna giriyor", "oyundan çıkıyor", "değişiklik",
-    "ofsayt", "var ", "kaçırdı", "kaçtı", "inanılmaz", "muhteşem", "harika", "uzaktan", "kafa vuruşu", "frikik",
-    "korner", "faul", "tehlikeli", "son dakika", "uzatma", "devre", "maç sona erdi", "maç sonu",
-]
+MOMENT = re.compile(
+    r"\bGOL\b|direk(ten| bu| dibin)|direğ|kurtar|kart\b|kartı|penaltı|sakat|yerde kaldı|oyuna giriyor|"
+    r"yerine .*(giriyor|alıyor)|değişiklik|ofsayt|(?-i:\bVAR\b)|burun buruna|kaçırdı|kaçtı|son anda|"
+    r"harika bir müdahale|müthiş|frikik|kafa vuruşu|ağları|tehlikeli|inanılmaz|maç sona erdi", re.IGNORECASE)
+KEYWORDS = MOMENT   # geriye uyum
 STAT_LABELS = ["Şut", "İsabetli Şut", "Topla Oynama", "İsabetli Pas", "Korner", "Faul", "Sarı Kart", "Kırmızı Kart",
                "Topa Müdahale", "Ofsayt", "Katettiği Mesafe"]
 _RATING = re.compile(r"^\d{1,2},\d$")
@@ -66,7 +65,7 @@ def parse_snapshot(items: list[list[str]]) -> dict:
         out["skor"] = sc[-1]
     ev = [t for n, t in items if n.startswith("DugoutEvent") and t.strip().isdigit()]
     if ev:
-        out["olay_dakikalari"] = ev
+        out["olay_dakikalari"] = sorted(set(ev), key=int)
     # istatistik kutusu takım takım yazılır: "FENERBAHÇE", Şut, 12, İsabetli Şut, 9, ... "GALATASARAY", Şut, 6, ...
     per_team: dict[str, list[str]] = {}
     side = -1
@@ -84,9 +83,9 @@ def parse_snapshot(items: list[list[str]]) -> dict:
     # takımlar: başlıktaki kısa kodlar + istatistik bölümündeki BÜYÜK HARFLİ tam adlar (sırayla ev, deplasman)
     codes = [t for n, t in items if n in ("ClubHomeTeamText", "ClubAwayTeamText")][:2]
     fulls = [t for n, t in items if n == "primary-text" and t.isupper() and len(t) > 2][:2]
-    if len(codes) == 2:
-        out["ev"] = f"{fulls[0].title() if fulls else codes[0]} ({codes[0]})"
-        out["deplasman"] = f"{fulls[1].title() if len(fulls) > 1 else codes[1]} ({codes[1]})"
+    if len(codes) == 2 and len(fulls) == 2:
+        out["ev"] = f"{fulls[0].title()} ({codes[0]})"
+        out["deplasman"] = f"{fulls[1].title()} ({codes[1]})"
     # oyuncu -> takım kodu (diziliş başlığından: "GS Diziliş (TS)")
     team, players, ratings = None, {}, []
     for i, (n, t) in enumerate(items):
@@ -143,12 +142,20 @@ def summarize(rows: list[dict], max_moments: int = 14) -> dict:
     summary["son_dakika"] = (end or {}).get("t") or (comments[-1]["t"] if comments else None)
 
     # goller: skor değişimleri + o ana yakın anlatım satırları
-    goals, prev = [], None
-    for s in scores:
-        if prev is not None and s["s"] != prev:
-            near = [c["x"] for c in comments if c.get("s") == s["s"] and _minute(c.get("t")) == _minute(s.get("t"))][:2]
-            goals.append({"dakika": _minute(s.get("t")), "skor": s["s"], "anlatim": near})
-        prev = s["s"]
+    # goller: anlatımdaki "GOL ..." satırları (gerçek kayıt: "GOL Galatasaray A.Ş.!!"). Skor elemanı geç güncellendiği
+    # için (gol 02:06, skor 03:36) dakika buradan alınır; golcü sadece satırda oyuncu adı geçerse bilinir.
+    goals = []
+    for c in comments:
+        x = c.get("x", "")
+        if re.match(r"^\s*GOL\b", x):
+            team = re.sub(r"\s*A\.Ş\.|[!.]+$", "", re.sub(r"^\s*GOL\b[!\s]*", "", x)).strip(" !")
+            goals.append({"dakika": _minute(c.get("t")), "anlatim": x, "_takim_metni": team})
+    if not goals:                                         # eski kayıt / anlatım kaçtıysa: skor değişimleri (golcüsüz)
+        prev = None
+        for s in scores:
+            if prev is not None and s["s"] != prev:
+                goals.append({"dakika": _minute(s.get("t")), "skor": s["s"], "golcu": "bilinmiyor (tahmin etme)"})
+            prev = s["s"]
     if goals:
         summary["goller"] = goals
 
@@ -157,7 +164,7 @@ def summarize(rows: list[dict], max_moments: int = 14) -> dict:
     for c in comments:
         x = c.get("x", "")
         low = x.lower()
-        if x in seen or not any(k in low for k in KEYWORDS):
+        if x in seen or not MOMENT.search(x):
             continue
         seen.add(x)
         moments.append(f"{_minute(c.get('t'))}' {x}")
@@ -169,7 +176,15 @@ def summarize(rows: list[dict], max_moments: int = 14) -> dict:
 
     if snaps:
         last = snaps[-1]
-        parsed = parse_snapshot(last.get("items") or [])
+        parsed = {}
+        late_only = {"xG", "istatistik", "en_iyi_reytingler", "en_dusuk_reytingler"}   # erken fotoğrafta hepsi 0
+        for sn in reversed(snaps):
+            m = _minute(sn.get("t"))
+            early = not m.isdigit() or int(m) < 45
+            for k, v in parse_snapshot(sn.get("items") or []).items():
+                if early and k in late_only:
+                    continue
+                parsed.setdefault(k, v)
         players = {}
         for sn in snaps:                                  # tüm fotoğraflardan oyuncu-takım eşlemesi (değişikliklerle gelenler)
             players.update(parse_snapshot(sn.get("items") or []).get("_oyuncu_takim", {}))
@@ -179,8 +194,18 @@ def summarize(rows: list[dict], max_moments: int = 14) -> dict:
             summary["son_mentalite"] = last["mentality"]
         if players:                                       # olayları doğru takıma bağlayabilsin
             summary["onemli_anlar"] = [_tag_players(m, players) for m in summary.get("onemli_anlar", [])]
-            for g in summary.get("goller", []):
-                g["anlatim"] = [_tag_players(x, players) for x in g.get("anlatim", [])]
+        for g in summary.get("goller", []):
+            text = g.get("anlatim", "")
+            scorer = next((p for p in sorted(players, key=len, reverse=True)
+                           if len(p.split(". ")[-1]) >= 3 and p.split(". ")[-1] in text), None)
+            g["golcu"] = f"{scorer} ({players[scorer]})" if scorer else g.get("golcu", "bilinmiyor (tahmin etme)")
+    for g in summary.get("goller", []):
+        team = g.pop("_takim_metni", "")
+        if team and "golcu" not in g:
+            g["golcu"] = "bilinmiyor (tahmin etme)"
+        if team:
+            g["takim"] = team
+        g.pop("anlatim", None)                    # "GOL X A.Ş.!!" satırı takım/golcü dışında bilgi taşımıyor
     if summary.get("ev") and summary.get("deplasman"):
         summary["takimlar"] = f"{summary.pop('ev')} - {summary.pop('deplasman')}"
     return {k: v for k, v in summary.items() if v}

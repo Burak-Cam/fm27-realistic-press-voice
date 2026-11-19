@@ -572,7 +572,7 @@ def test_match_summary():
     import match
     s = match.summarize(_match_rows())
     assert s["skor"] == "1 - 0"
-    assert s["goller"][0]["dakika"] == "6" and "Muriqi (FB)" in s["goller"][0]["anlatim"][0]
+    assert s["goller"][0]["dakika"] == "6" and s["goller"][0]["golcu"] == "Muriqi (FB)"
     assert s["takimlar"] == "Fenerbahçe (FB) - Galatasaray (GS)"
     assert match.mark_manager_team(dict(s), "Fenerbahçe")["teknik_direktorun_takimi"] == "Galatasaray (GS)"
     assert any("direkten" in m for m in s["onemli_anlar"]) and any("oyuna giriyor" in m for m in s["onemli_anlar"])
@@ -603,3 +603,19 @@ def test_match_summary_used_after_match(tmp_path, monkeypatch):
     assert "GECEN_MAC" in prompts[0] and "saha kenarı (TV)" in prompts[0]
     f.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in _match_rows()[:-1]), encoding="utf-8")
     assert match.previous_summary() is None                                     # bitmemiş (güncel) maç alınmaz
+
+
+def test_goals_from_commentary_without_scorer():
+    """Gerçek kayıt biçimi: 'GOL Galatasaray A.Ş.!!' (golcü yok); skor elemanı geç güncellenir."""
+    import match
+    rows = [{"type": "start", "teams": "FB-GS"},
+            {"type": "c", "t": "02:01", "s": "0 - 0", "x": "Sallai topla güzel oynuyor, İsmail sadece"},
+            {"type": "c", "t": "02:06", "s": "0 - 0", "x": "GOL Galatasaray A.Ş.!!"},
+            {"type": "score", "t": "03:36", "s": "0 - 1"},
+            {"type": "c", "t": "03:36", "s": "0 - 1", "x": "Sallai geliyor ve taç atışını kullanıyor"},
+            {"type": "c", "t": "70:10", "s": "0 - 1", "x": "GOL Fenerbahçe A.Ş.!!"},
+            {"type": "end", "t": "90:01", "s": "1 - 1"}]
+    g = match.summarize(rows)["goller"]
+    assert [(x["dakika"], x["takim"], x["golcu"]) for x in g] == [
+        ("2", "Galatasaray", "bilinmiyor (tahmin etme)"), ("70", "Fenerbahçe", "bilinmiyor (tahmin etme)")]
+    assert not any("Sallai" in str(x) for x in g)
