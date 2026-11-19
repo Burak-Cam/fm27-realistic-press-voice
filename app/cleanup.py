@@ -65,7 +65,8 @@ def _stale_tts_cache() -> int:
     wanted = set()
     profiles = [voices.moderator()] + [p for p in voices.PROFILES if p.get("provider") != "chirp"]
     for screen in closing.OPENINGS:
-        for line in closing.OPENINGS[screen] + closing.CLOSINGS.get(screen, []):
+        for line in closing.OPENINGS[screen] + closing.CLOSINGS.get(screen, []) + \
+                ["Kusura bakmayın, sizi duyamadım. Tekrar eder misiniz?"]:
             for p in profiles:
                 wanted.add(os.path.basename(voice._cache_path(line, p)))
     return sum(_remove(os.path.join(voice.CACHE_DIR, f)) for f in os.listdir(voice.CACHE_DIR) if f not in wanted)

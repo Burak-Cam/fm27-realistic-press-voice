@@ -639,3 +639,11 @@ def test_cleanup(tmp_path, monkeypatch):
     assert sorted(os.listdir(bridge / "matches")) == ["match_3.jsonl", "match_4.jsonl"]
     assert not old_dump.exists() and new_dump.exists() and keep_other.exists()
     assert freed >= 300 + 500
+
+
+def test_name_hint():
+    st = {"opponent": "Fenerbahçe", "competition": "Trendyol Süper Lig", "journalist": {"name": "Berkan Koç"}}
+    h = PressSession._name_hint(st, "Hocam, Osimhen'in 40. dakikadaki fırsatı...", {"onemli_anlar": ["89' Uğurcan (GS) kurtardı"]})
+    for w in ("Fenerbahçe", "Berkan", "Osimhen", "Uğurcan"):
+        assert w in h
+    assert "Hocam" not in h

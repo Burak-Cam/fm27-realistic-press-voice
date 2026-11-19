@@ -129,7 +129,8 @@ def precache_fixed_lines():
     jobs = []
     for screen in closing.OPENINGS:
         profs = [mod] if screen == "press_conference" else journalists
-        for line in closing.OPENINGS[screen] + closing.CLOSINGS.get(screen, []):
+        extra = ["Kusura bakmayın, sizi duyamadım. Tekrar eder misiniz?"] if screen != "press_conference" else []
+        for line in closing.OPENINGS[screen] + closing.CLOSINGS.get(screen, []) + extra:
             for p in profs:
                 if p.get("provider") != "chirp":
                     jobs.append((line, p))
@@ -263,12 +264,22 @@ def load_stt():
     return _model
 
 
+_hint = ""
+
+
+def set_hint(text: str):
+    """Sonraki dökümler için ipucu: o anki maçın özel isimleri (rakip, oyuncular, gazeteci). Whisper isimleri doğru yazar."""
+    global _hint
+    _hint = (text or "")[:220]
+
+
 def transcribe(audio) -> str:
     """audio: 16 kHz mono float32 dizi ya da ses dosyası yolu."""
     if audio is None or (isinstance(audio, np.ndarray) and audio.size < SR * 0.3):
         return ""
     segs, _ = load_stt().transcribe(audio, language="tr", vad_filter=True, beam_size=C.WHISPER_BEAM,
-                                    initial_prompt="Futbol basın toplantısında teknik direktörün cevabı.")
+                                    initial_prompt=("Futbol basın toplantısında teknik direktörün cevabı. Derbi, deplasman, taraftar, camia. "
+                                                    + _hint).strip())
     return " ".join(s.text.strip() for s in segs).strip()
 
 
@@ -337,3 +348,6 @@ def listen_text(should_abort=lambda: False) -> str | None:
         return input("  Cevabın > ").strip()
     except EOFError:
         return None
+
+
+listen_voice.set_hint = set_hint

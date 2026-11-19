@@ -165,6 +165,21 @@ class PressSession:
             return voices.moderator()
         return self.voicebook.for_journalist(st.get("journalist"))
 
+    @staticmethod
+    def _name_hint(st: dict, question: str, match: dict | None) -> str:
+        """Whisper ipucu: rakip, organizasyon, gazeteci ve soru/maç verisindeki özel isimler (tekrarsız)."""
+        import json as _json
+        import re as _re
+        src = " ".join(filter(None, [st.get("opponent"), st.get("competition"), (st.get("journalist") or {}).get("name"),
+                                     question, _json.dumps(match, ensure_ascii=False) if match else ""]))
+        words, seen = [], set()
+        for w in _re.findall(r"[A-ZÇĞİÖŞÜ][\wçğıöşüéáíóãñ'.-]{2,}", src):
+            w = w.strip(".'")
+            if w.lower() not in seen and w not in ("Hocam", "GOL", "FB", "GS"):
+                seen.add(w.lower())
+                words.append(w)
+        return ", ".join(words[:30])
+
     def _current_qid(self):
         st = self.io.read_state() or {}
         return st.get("question_id") if st.get("active") else None
@@ -260,6 +275,9 @@ class PressSession:
         if aborted():
             print("  (soru okunurken ekranda değişti, atlandı)"); return
 
+        hint_fn = getattr(self.listen, "set_hint", None)
+        if hint_fn:
+            hint_fn(self._name_hint(st, question, match))
         answer = None
         for attempt in range(C.LISTEN_RETRIES + 1):
             answer = self.listen(aborted)
@@ -268,7 +286,9 @@ class PressSession:
             if answer:
                 break
             if attempt < C.LISTEN_RETRIES:
-                self._say("Kusura bakmayın, sizi duyamadım. Tekrar eder misiniz?", aborted, prof)
+                sorry = "Kusura bakmayın, sizi duyamadım. Tekrar eder misiniz?"
+                self._wait_opening()
+                self._play_now(self._prepare_fixed(sorry, prof), sorry, aborted, prof)
         if not answer:
             print("  Cevap alınamadı; seçimi oyunda elle yap."); return
         print(f"  Sen: {answer}")
