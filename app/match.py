@@ -206,6 +206,24 @@ def summarize(rows: list[dict], max_moments: int = 14) -> dict:
         if team:
             g["takim"] = team
         g.pop("anlatim", None)                    # "GOL X A.Ş.!!" satırı takım/golcü dışında bilgi taşımıyor
+    screens = [r for r in rows if r.get("type") == "screen"]
+    def _screen_text(r, limit):
+        texts, seen = [], set()
+        for items in (r.get("panels") or {}).values():
+            for _, t in items:
+                if t not in seen and len(t) < 80:
+                    seen.add(t)
+                    texts.append(t)
+        return " | ".join(texts)[:limit]
+
+    size = lambda r: sum(len(v) for v in (r.get("panels") or {}).values())
+    full = [r for r in screens if r.get("where") in ("mac_sonu_ekrani", "dudukte_mac_ekrani")]
+    half = [r for r in screens if str(r.get("where", "")).startswith("devre_arasi")]
+    if full:                                              # maç sonu ekranı: golcüler, istatistikler (ham metin)
+        pref = [r for r in full if r.get("where") == "mac_sonu_ekrani"] or full
+        summary["mac_sonu_ekrani_metni"] = _screen_text(max(pref, key=size), 2500)
+    if half:                                              # devre arası: ilk yarı istatistikleri
+        summary["devre_arasi_ekrani_metni"] = _screen_text(max(half, key=size), 1200)
     if summary.get("ev") and summary.get("deplasman"):
         summary["takimlar"] = f"{summary.pop('ev')} - {summary.pop('deplasman')}"
     return {k: v for k, v in summary.items() if v}
@@ -252,3 +270,13 @@ def previous_summary(max_age_days: float = 7) -> dict | None:
         s = summarize(rows)
         return s if len(s) > 2 else None
     return None
+
+
+def cleanup(keep: int = 30):
+    """Eski maç kayıtlarını sil (son `keep` kalır)."""
+    files = sorted(glob.glob(os.path.join(MATCH_DIR, "match_*.jsonl")), key=os.path.getmtime, reverse=True)
+    for f in files[keep:]:
+        try:
+            os.remove(f)
+        except OSError:
+            pass

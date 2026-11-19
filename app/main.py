@@ -40,6 +40,18 @@ def _listener(text_mode: bool):
     return voice.listen_voice
 
 
+def _cleanup_logs(log_dir: str):
+    """Otomatik temizlik: son 50 toplantı kaydı ve son 15 uygulama kaydı kalır."""
+    import glob
+    for pattern, keep in (("press_*.json", 50), ("live_*.log", 15)):
+        files = sorted(glob.glob(os.path.join(log_dir, pattern)), key=os.path.getmtime, reverse=True)
+        for f in files[keep:]:
+            try:
+                os.remove(f)
+            except OSError:
+                pass
+
+
 class _Tee:
     """Konsol çıktısını logs/live_*.log dosyasına da yazar (sonradan incelemek için)."""
 
@@ -62,6 +74,9 @@ def cmd_live(a):
     sys.stdout = _Tee(sys.stdout, os.path.join(log_dir, f"live_{datetime.now():%Y%m%d_%H%M%S}.log"))
     import llm
     import status
+    import match as match_log
+    _cleanup_logs(log_dir)
+    match_log.cleanup(30)
     threading.Thread(target=llm.warm_up, daemon=True).start()
     if not a.no_tts:
         import voice
