@@ -30,6 +30,7 @@ MODEL_COOLDOWN = float(os.getenv("FM_MODEL_COOLDOWN", "300"))  # 503/zaman aşı
 # ---------------- Ses ----------------
 TTS_VOICE = os.getenv("FM_TTS_VOICE", "tr-TR-AhmetNeural")
 TTS_RATE = os.getenv("FM_TTS_RATE", "+0%")
+TTS_SPEED = int(os.getenv("FM_TTS_SPEED", "12"))   # tüm seslere eklenen okuma hızı (yüzde; 0 = doğal, 12 = biraz hızlı)
 # Kullanıcı dinledi (2026-11-19): çok dilli sesler Türkçede bozuluyor ("şampiyonluk"), tok varyasyonlar kötü.
 VOICES_OFF = os.getenv("FM_VOICES_OFF", "ahmet-tok,emel-tok,brian,william,andrew,remy,giuseppe,emma,ava,thalita")
 MODERATOR_VOICE = os.getenv("FM_MODERATOR_VOICE", "")   # boş = otomatik (Chirp varsa chirp-sadaltager, yoksa ahmet)

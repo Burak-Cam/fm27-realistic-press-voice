@@ -16,8 +16,8 @@ from sim_plugin import SimPlugin, load_states
 def _speech(spoken):
     """Açılış cümlesini çıkar (her toplantı başında okunur)."""
     import closing
-    opens = {m for v in closing.OPEN_MAIN.values() for m in v}
-    return [x for x in spoken if not any(x.endswith(m) for m in opens)]
+    opens = {m for v in closing.OPENINGS.values() for m in v}
+    return [x for x in spoken if x not in opens]
 
 
 def _until(sim, limit=60):
@@ -230,9 +230,14 @@ def test_status_file_written(tmp_path):
 def test_closing_line_varies_and_avoids_repeats(tmp_path):
     import closing
     path = str(tmp_path / "recent.json")
-    lines = [closing.make("press_conference", "pre_match", path) for _ in range(8)]
-    assert len(set(lines)) == 8                                # son 8 cümle tekrar etmez
-    assert all("." in x and len(x.split()) >= 6 for x in lines)
+    lines = [closing.make("press_conference", "pre_match", path) for _ in range(30)]
+    assert all(lines[i] not in lines[max(0, i - 3):i] for i in range(len(lines)))   # son 3 cümle tekrar etmez
+    assert set(lines) <= set(closing.CLOSINGS["press_conference"])
+    assert all(len(v) >= 7 for v in closing.CLOSINGS.values())
+    assert all(len(v) >= 7 for v in closing.OPENINGS.values())
+    ops = [closing.make_opening("tunnel_interview", None, str(tmp_path / "o.json")) for _ in range(20)]
+    assert set(ops) <= set(closing.OPENINGS["tunnel_interview"])
+    assert all(ops[i] not in ops[max(0, i - 3):i] for i in range(len(ops)))
 
 
 def test_closing_spoken_on_game_thank_you_bubble(tmp_path):
@@ -442,3 +447,55 @@ def test_journalist_introduces_only_first_time(tmp_path):
     s.handle(st2)
     qp = [p for p in prompts if p.startswith("GOREV: SORU")]
     assert "İLK sorun" in qp[0] and "Kendini TANITMA" in qp[1]
+
+
+def test_closing_audio_prepared_at_start(tmp_path):
+    """Kapanış sesi toplantı başında hazırlanır; bitişte yeniden sentez yapılmaz."""
+    st = dict(load_states()[0], active=True, ready=True)
+    io = _FakeIO(st)
+    prepared, played = [], []
+
+    def speaker(text, should_abort=None, profile=None):
+        played.append(("speak", text))
+    speaker.abortable = speaker.voiced = True
+    speaker.prepare = lambda text, prof=None: prepared.append(("q", text)) or "soru.mp3"
+    speaker.prepare_cached = lambda text, prof=None: prepared.append(("sabit", text)) or f"sabit-{len(prepared)}.mp3"
+    speaker.play = lambda path, abort=None: played.append(("play", path))
+
+    def listen(abort):
+        io.state = {"active": False}
+        return "cevap"
+    s = PressSession(io, speaker, listen, follow_up_prob=0, log_dir=str(tmp_path / "logs"))
+    end = time.time() + 3
+    s.run(stop=lambda: time.time() > end or s.closed)
+    fixed = [t for k, t in prepared if k == "sabit"]
+    assert len(fixed) == 2                                   # açılış + kapanış, ikisi de toplantı başında
+    import closing
+    assert fixed[1] in closing.CLOSINGS[st["screen"]] if st.get("screen") in closing.CLOSINGS else True
+    assert played[-1][0] == "play" and played[-1][1].startswith("sabit-")   # kapanış hazır sesle çaldı
+
+
+def test_tts_cache_reuses_file(tmp_path, monkeypatch):
+    import voice
+    monkeypatch.setattr(voice, "CACHE_DIR", str(tmp_path / "cache"))
+    calls = []
+
+    def fake_prepare(text, profile=None):
+        calls.append(text)
+        p = tmp_path / f"t{len(calls)}.mp3"
+        p.write_bytes(b"ID3fake")
+        return str(p)
+    monkeypatch.setattr(voice, "prepare", fake_prepare)
+    a = voice.prepare_cached("Teşekkürler hocam.", {"voice": "tr-TR-AhmetNeural"})
+    b = voice.prepare_cached("Teşekkürler hocam.", {"voice": "tr-TR-AhmetNeural"})
+    assert calls == ["Teşekkürler hocam."] and a != b and open(b, "rb").read() == b"ID3fake"
+
+
+def test_tts_speed_applied(monkeypatch):
+    import voice
+    monkeypatch.setattr(C, "TTS_SPEED", 12)
+    assert voice.effective({"voice": "tr-TR-AhmetNeural", "pitch": "+0Hz", "rate": "+0%"})["rate"] == "+12%"
+    assert voice.effective({"voice": "tr-TR-AhmetNeural", "pitch": "+10Hz", "rate": "+8%"})["rate"] == "+20%"
+    assert voice.effective({"provider": "chirp", "voice": "x", "speaking_rate": 1.0})["speaking_rate"] == 1.12
+    monkeypatch.setattr(C, "TTS_SPEED", 0)
+    assert voice.effective({"voice": "v", "pitch": "+0Hz", "rate": "-5%"})["rate"] == "-5%"

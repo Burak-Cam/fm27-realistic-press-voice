@@ -65,7 +65,10 @@ def cmd_live(a):
     threading.Thread(target=llm.warm_up, daemon=True).start()
     if not a.no_tts:
         import voice
-        threading.Thread(target=voice.warm_voices, daemon=True).start()
+        def _warm():
+            voice.warm_voices()
+            voice.precache_fixed_lines()
+        threading.Thread(target=_warm, daemon=True).start()
     status.start(C.BRIDGE_DIR)
     status.set("loading", "Ses tanıma yükleniyor, birkaç saniye...")
     match = json.load(open(a.match, encoding="utf-8")) if a.match else None

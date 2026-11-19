@@ -1,127 +1,96 @@
-"""Toplantı/röportaj bitince gazetecinin kapanış cümlesi (anında, LLM'siz).
-
-Cümle üç parçadan kurulur: teşekkür + kapanış + dilek. Parçalar etkinlik türüne göre seçilir; son kullanılan
-cümleler logs/closing_recent.json'da tutulur ve tekrar edilmez.
-"""
+"""Toplantı/röportaj açılış ve kapanış cümleleri (hazır, LLM'siz). Son kullanılanlar logs/*_recent.json'da tutulur."""
 import json
 import os
 import random
 
-THANKS = [
-    "Cevaplarınız için çok teşekkürler hocam.",
-    "Zaman ayırdığınız için teşekkür ederiz.",
-    "Açıklamalarınız için sağ olun hocam.",
-    "Samimi cevaplarınız için teşekkürler.",
-    "Vakit ayırdığınız için çok sağ olun.",
-    "Bizi kırmadığınız için teşekkürler hocam.",
-    "Değerlendirmeleriniz için teşekkür ederiz.",
-]
-
-ENDS = {
+# Hazır kapanış cümleleri (kullanıcı isteği: her tür için 7-8 sabit cümle, ses önceden hazırlanır -> toplantı anında biter).
+# Basın toplantısını moderatör, saha kenarı röportajını gazeteci kapatır.
+CLOSINGS = {
     "press_conference": [
-        "Bugünlük sorularımız bu kadar.",
-        "Basın toplantımızın sonuna geldik.",
-        "Soru cevap bölümünü burada bitiriyoruz.",
-        "Toplantıyı burada noktalıyoruz.",
-        "Başka sorumuz yok.",
-        "Sorularımız bu kadardı.",
+        "Evet arkadaşlar, sorularımız bu kadardı. Hocamıza teşekkür ediyoruz.",
+        "Basın toplantımızın sonuna geldik. Katılımınız için hepinize teşekkürler.",
+        "Bugünlük bu kadar arkadaşlar. Hocam, değerlendirmeleriniz için teşekkürler.",
+        "Zamanımız doldu arkadaşlar. Hocamıza teşekkür ediyor, toplantıyı burada sonlandırıyoruz.",
+        "Son soruyu da aldık. Hocam teşekkürler, herkese iyi çalışmalar.",
+        "Toplantımızı burada noktalıyoruz. Hocam, açıklamalarınız için sağ olun.",
+        "Evet, bugünkü basın toplantımız sona erdi. Hepinize teşekkür ederiz.",
+        "Sorularınız için teşekkürler arkadaşlar. Bir sonraki toplantıda görüşmek üzere.",
     ],
     "tunnel_interview": [
-        "Sizi daha fazla tutmayalım, maç başlamak üzere.",
-        "Kulübeye geçmeden son sorumuz buydu.",
-        "Sizi daha fazla bekletmeyelim.",
-        "Röportajımız bu kadardı.",
-        "Maç öncesi sorularımız bu kadar.",
+        "Teşekkürler hocam, maçta başarılar.",
+        "Sizi daha fazla tutmayalım hocam, iyi maçlar.",
+        "Cevaplarınız için sağ olun hocam, bol şans.",
+        "Teşekkürler hocam, kulübeye geçebilirsiniz. İyi maçlar.",
+        "Sorularımız bu kadardı hocam, başarılar dileriz.",
+        "Vakit ayırdığınız için teşekkürler, maçta kolay gelsin.",
+        "Tamamdır hocam, teşekkürler. İyi maçlar diliyoruz.",
+        "Bizi kırmadığınız için sağ olun hocam, bol şans.",
     ],
     "post_match_tunnel_interview": [
-        "Sizi daha fazla tutmayalım.",
-        "Röportajımız bu kadardı.",
-        "Maç sonu sorularımız bu kadar.",
-        "Sizi soyunma odasına bırakalım.",
-        "Sorularımız bu kadardı.",
+        "Teşekkürler hocam, basın toplantısında görüşmek üzere.",
+        "Değerlendirmeleriniz için sağ olun hocam.",
+        "Sizi daha fazla tutmayalım hocam, teşekkürler.",
+        "Maç sonu sorularımız bu kadardı, teşekkürler hocam.",
+        "Vakit ayırdığınız için teşekkürler hocam, kolay gelsin.",
+        "Tamamdır hocam, sağ olun. Bir sonraki maçta görüşmek üzere.",
+        "Cevaplarınız için teşekkürler hocam, iyi dinlenmeler.",
+        "Teşekkür ederiz hocam, sizi soyunma odasına bırakalım.",
     ],
-}
-
-WISHES = {
-    "pre_match": ["Maçta başarılar.", "Bol şans hocam.", "İyi maçlar.", "Kolay gelsin, iyi maçlar dileriz."],
-    "post_match": ["Bir sonraki maçta görüşmek üzere.", "İyi akşamlar.", "Haftaya görüşmek üzere.", "Kolay gelsin."],
-    "manager_intro": ["Yeni görevinizde başarılar dileriz.", "Hayırlı olsun, kolay gelsin.", "Yolunuz açık olsun hocam."],
-    "player_signing": ["Transfer hayırlı olsun.", "Yeni transferle birlikte başarılar dileriz.", "Hayırlı olsun."],
-    "other": ["İyi çalışmalar.", "Görüşmek üzere.", "Kolay gelsin."],
 }
 
 RECENT_MAX = 8
 
-# Açılış: basın toplantısında moderatör konuşur, saha kenarında gazeteci selamlar.
-OPEN_GREET = {
+# Hazır açılış cümleleri: basın toplantısını moderatör açar, saha kenarında gazeteci selamlar.
+OPENINGS = {
     "press_conference": [
-        "Arkadaşlar hoş geldiniz.",
-        "Evet arkadaşlar, yerlerimizi alalım.",
-        "Herkese merhaba, hoş geldiniz.",
-        "Arkadaşlar, başlıyoruz.",
-        "İyi günler arkadaşlar.",
-    ],
-    "tunnel_interview": ["Hocam merhaba.", "Hocam hoş geldiniz.", "Merhaba hocam, kısa tutacağız."],
-    "post_match_tunnel_interview": ["Hocam merhaba.", "Hocam geçmiş olsun, hoş geldiniz.", "Merhaba hocam."],
-}
-OPEN_MAIN = {
-    "press_conference": [
-        "Basın toplantımız başlıyor.",
-        "Hocamız aramızda, sorularınızı alabiliriz.",
-        "Basın toplantımıza başlıyoruz, ilk soruyu alalım.",
-        "Hocamız hazır, sorularınızı sırayla alalım.",
-        "Toplantımızı başlatıyoruz, söz sizde.",
+        "Arkadaşlar hoş geldiniz, basın toplantımız başlıyor.",
+        "Evet arkadaşlar, yerlerimizi alalım. Hocamız aramızda, sorularınızı alabiliriz.",
+        "Herkese merhaba. Basın toplantımıza başlıyoruz, ilk soruyu alalım.",
+        "Arkadaşlar başlıyoruz. Hocamız hazır, sorularınızı sırayla alalım.",
+        "İyi günler arkadaşlar, toplantımızı başlatıyoruz. Söz sizde.",
+        "Hoş geldiniz arkadaşlar. Vaktimiz kısıtlı, sorularınızı kısa tutalım lütfen.",
+        "Evet arkadaşlar, hocamız geldi. Basın toplantımıza başlayabiliriz.",
+        "Herkese hoş geldiniz. Sorularınızı alalım, buyurun.",
     ],
     "tunnel_interview": [
-        "Maç öncesi birkaç kısa sorumuz olacak.",
-        "Kulübeye geçmeden önce iki üç soru soralım.",
-        "Maç öncesi düşüncelerinizi alalım.",
+        "Hocam merhaba, maç öncesi birkaç kısa sorumuz olacak.",
+        "Hocam hoş geldiniz, kulübeye geçmeden önce iki üç soru soralım.",
+        "Merhaba hocam, kısa tutacağız. Maç öncesi düşüncelerinizi alalım.",
+        "Hocam merhaba, sizi çok tutmayacağız. Birkaç sorumuz var.",
+        "Hoş geldiniz hocam, maç başlamadan kısa bir değerlendirme alalım.",
+        "Merhaba hocam, maç öncesi son düşüncelerinizi merak ediyoruz.",
+        "Hocam merhaba, vaktinizi almadan hızlıca birkaç soru soralım.",
+        "Hocam hoş geldiniz, maç öncesi kısa bir röportaj yapalım.",
     ],
     "post_match_tunnel_interview": [
-        "Maç sonu sıcağı sıcağına birkaç soru soralım.",
-        "Maçla ilgili kısa birkaç sorumuz olacak.",
-        "Maç sonrası ilk değerlendirmelerinizi alalım.",
+        "Hocam merhaba, maç sonu sıcağı sıcağına birkaç soru soralım.",
+        "Hocam hoş geldiniz, maçla ilgili kısa birkaç sorumuz olacak.",
+        "Merhaba hocam, maç sonrası ilk değerlendirmelerinizi alalım.",
+        "Hocam merhaba, düdüğün hemen ardından kısa bir değerlendirme alalım.",
+        "Hoş geldiniz hocam, sizi çok tutmadan maçı konuşalım.",
+        "Hocam merhaba, maçla ilgili ilk izlenimlerinizi merak ediyoruz.",
+        "Merhaba hocam, kısa tutacağız. Maç sonu birkaç sorumuz var.",
+        "Hocam hoş geldiniz, maç sonu düşüncelerinizi alalım.",
     ],
 }
 
 
 def make_opening(screen: str | None, event: str | None = None, recent_path: str | None = None, rng=random) -> str:
-    """Toplantı/röportaj açılış cümlesi; son kullanılanlardan farklı."""
-    key = screen if screen in OPEN_MAIN else "press_conference"
+    """Hazır listeden açılış cümlesi; son 3 kullanılan tekrar etmez."""
+    lines = OPENINGS.get(screen or "", OPENINGS["press_conference"])
     recent = _load(recent_path)
-    line = ""
-    for _ in range(30):
-        line = f"{rng.choice(OPEN_GREET[key])} {rng.choice(OPEN_MAIN[key])}"
-        if line not in recent:
-            break
+    fresh = [x for x in lines if x not in recent[-3:]] or lines
+    line = rng.choice(fresh)
     _save(recent_path, (recent + [line])[-RECENT_MAX:])
     return line
 
 
-def _event_for(screen: str | None, event: str | None) -> str:
-    if event in WISHES:
-        return event
-    if screen == "tunnel_interview":
-        return "pre_match"
-    if screen == "post_match_tunnel_interview":
-        return "post_match"
-    return "other"
-
-
 def make(screen: str | None, event: str | None = None, recent_path: str | None = None, rng=random) -> str:
-    """Kapanış cümlesi üret; recent_path verilirse son kullanılanlardan farklı olur ve oraya kaydedilir."""
-    ends = ENDS.get(screen or "", ENDS["press_conference"])
-    wishes = WISHES[_event_for(screen, event)]
+    """Hazır listeden kapanış cümlesi; son 3 kullanılan tekrar etmez."""
+    lines = CLOSINGS.get(screen or "", CLOSINGS["press_conference"])
     recent = _load(recent_path)
-    line = ""
-    for _ in range(30):
-        parts = [rng.choice(THANKS), rng.choice(ends), rng.choice(wishes)]
-        if rng.random() < 0.4:                 # bazen kapanış önce gelsin
-            parts[0], parts[1] = parts[1], parts[0]
-        line = " ".join(parts)
-        # aynı cümle ya da son cümleyle aynı parça tekrar etmesin
-        if line not in recent and not (recent and any(p in recent[-1] for p in parts[:2])):
-            break
+    fresh = [x for x in lines if x not in recent[-3:]] or lines
+    line = rng.choice(fresh)
     _save(recent_path, (recent + [line])[-RECENT_MAX:])
     return line
 

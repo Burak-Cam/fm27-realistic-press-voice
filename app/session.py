@@ -45,6 +45,7 @@ class PressSession:
         self.fu_asked: set[str] = set()   # bu toplantıda takip sorusu sorulmuş gazeteciler
         self.introduced: set[str] = set() # bu toplantıda kendini tanıtmış gazeteciler
         self._opening = None       # açılış cümlesini okuyan arka plan iş parçacığı
+        self._closing_line = self._closing_audio = self._closing_prof = None
         self.voicebook = voices.VoiceBook(os.path.join(self.log_dir, "voices_map.json"))
         self.closed = False        # kapanış cümlesi söylendi mi
         self._last_st = None
@@ -100,21 +101,36 @@ class PressSession:
         if st.get("question_id") != self._closing_qid:
             self._closing_qid, self._closing_since = st.get("question_id"), time.time()
             return False
-        return time.time() - self._closing_since >= 1.2
+        return time.time() - self._closing_since >= 0.6
+
+    def _prepare_fixed(self, text: str, prof: dict | None):
+        """Sabit cümle (açılış/kapanış): önbellekli hazırla; desteklemeyen konuşucuda normal hazırla."""
+        pc = getattr(self.speak, "prepare_cached", None)
+        if pc and getattr(self.speak, "voiced", False):
+            return pc(text, prof)
+        return self._prepare(text, prof)
 
     def _open(self, st: dict):
-        """Ekrana girer girmez açılış cümlesi; ilk soru hazırlanırken arka planda okunur (soruyu geciktirmez)."""
+        """Ekrana girer girmez açılış cümlesi; ilk soru hazırlanırken arka planda okunur (soruyu geciktirmez).
+        Aynı anda kapanış cümlesi seçilip sesi hazırlanır: toplantı bitince beklemeden çalar."""
         line = closing.make_opening(st.get("screen"), st.get("event_hint"),
                                     os.path.join(self.log_dir, "opening_recent.json"))
         prof = self._host_voice(st)
         print(f"\n  Açılış [{prof['id']}]: {line}")
         status.set("speaking", "Toplantı başlıyor...")
+        self._closing_line = closing.make(st.get("screen"), None, os.path.join(self.log_dir, "closing_recent.json"))
+        self._closing_prof = prof
+        self._closing_audio = None
 
         def run():
             try:
-                self._play_now(self._prepare(line, prof), line, None, prof)
+                self._play_now(self._prepare_fixed(line, prof), line, None, prof)
             except Exception as e:
                 print(f"  [açılış] okunamadı: {e!r}")
+            try:
+                self._closing_audio = self._prepare_fixed(self._closing_line, prof)   # kapanış sesi şimdiden hazır
+            except Exception as e:
+                print(f"  [kapanış] hazırlanamadı: {e!r}")
         self._opening = threading.Thread(target=run, daemon=True)
         self._opening.start()
 
@@ -126,11 +142,16 @@ class PressSession:
     def _close(self, st: dict, on_screen: bool):
         """Gazeteci teşekkür edip toplantıyı kapatır (her seferinde farklı cümle)."""
         self.closed = True
-        event = next((h["event"] for h in reversed(self.history) if h.get("event")), None) or st.get("event_hint")
-        line = closing.make(st.get("screen"), event, os.path.join(self.log_dir, "closing_recent.json"))
-        prof = self._host_voice(st)
-        print(f"\n  Kapanış [{prof['id']}]: {line}")
-        audio = self._prepare(line, prof)
+        line, prof, audio = getattr(self, "_closing_line", None), getattr(self, "_closing_prof", None), None
+        if line:
+            self._wait_opening()                        # açılış iş parçacığı kapanış sesini de hazırlıyor
+            audio = self._closing_audio
+        else:                                           # açılış görülmeden kapanış (olağan dışı)
+            line = closing.make(st.get("screen"), None, os.path.join(self.log_dir, "closing_recent.json"))
+            prof = self._host_voice(st)
+            audio = self._prepare_fixed(line, prof)
+        self._closing_line = self._closing_audio = None
+        print(f"\n  Kapanış [{prof['id'] if prof else '?'}]: {line}")
         if on_screen and C.REPLACE_QUESTION and st.get("question_id"):
             self.io.write_question(st["question_id"], line)     # oyunun kapanış balonunda da bizim cümle yazsın
         status.set("speaking", "Gazeteci toplantıyı kapatıyor...")

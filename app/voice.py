@@ -14,12 +14,32 @@ SR = 16000
 
 
 # ---------------- TTS ----------------
+def _pct(s: str | None) -> int:
+    try:
+        return int(str(s or "+0%").strip().rstrip("%"))
+    except ValueError:
+        return 0
+
+
+def effective(profile: dict | None) -> dict:
+    """Genel okuma hızını (FM_TTS_SPEED) profile ekler: edge'de rate yüzdesi, Chirp'te speaking_rate çarpanı."""
+    p = dict(profile or {"voice": C.TTS_VOICE, "pitch": "+0Hz", "rate": C.TTS_RATE})
+    if p.get("provider") == "chirp":
+        p["speaking_rate"] = round(float(p.get("speaking_rate", 1.0)) * (1 + C.TTS_SPEED / 100), 3)
+    else:
+        r = _pct(p.get("rate")) + C.TTS_SPEED
+        p["rate"] = f"{r:+d}%"
+    return p
+
+
 def synth(text: str, path: str, profile: dict | None = None):
     """profile: voices.py profili (ses/perde/hız). Sentez başarısızsa aynı cinsiyetin doğal Türkçe sesine düşer."""
     import edge_tts
     if not profile:
-        asyncio.run(edge_tts.Communicate(text, C.TTS_VOICE, rate=C.TTS_RATE).save(path))
+        p = effective(None)
+        asyncio.run(edge_tts.Communicate(text, p["voice"], rate=p["rate"]).save(path))
         return
+    profile = effective(profile)
     try:
         if profile.get("provider") == "chirp":
             import tts_chirp
@@ -32,6 +52,7 @@ def synth(text: str, path: str, profile: dict | None = None):
         if fb["voice"] == profile["voice"]:
             raise
         print(f"  [tts] {profile['id']} kullanılamadı ({type(e).__name__}: {str(e)[:80]}), {fb['id']} kullanılıyor")
+        fb = effective(fb)
         asyncio.run(edge_tts.Communicate(text, fb["voice"], rate=fb["rate"], pitch=fb["pitch"]).save(path))
 
 
@@ -70,6 +91,79 @@ def prepare(text: str, profile: dict | None = None) -> str | None:
     except Exception as e:  # ağ yok...
         print(f"  [tts] sentezlenemedi: {e}")
         return None
+
+
+CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "tts_cache")
+
+
+def prepare_cached(text: str, profile: dict | None = None) -> str | None:
+    """Sabit cümleler (açılış/kapanış) için: ses diske önbelleklenir, sonraki kullanımda sentez yok.
+    Çalınınca silinebilmesi için önbellekten geçici bir kopya döner."""
+    if not text:
+        return None
+    import shutil
+    cached = _cache_path(text, profile)
+    if not os.path.exists(cached):
+        tmp = prepare(text, profile)
+        if not tmp:
+            return None
+        if (profile or {}).get("provider") == "chirp" or not os.path.getsize(tmp):
+            return tmp                                     # Chirp sesi kotalı/ücretli: diske yazma, sadece bu sefer
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        shutil.move(tmp, cached)
+    fd, out = tempfile.mkstemp(suffix=".mp3", prefix="fm_tts_")
+    os.close(fd)
+    shutil.copyfile(cached, out)
+    return out
+
+
+def precache_fixed_lines():
+    """Açılışta (arka planda): tüm açılış/kapanış cümlelerinin sesini, kullanılabilecek her sesle diske hazırla.
+    İlk seferde birkaç dakika sürer, sonra hepsi hazırdır -> ekrana girince/toplantı bitince anında çalar.
+    Chirp sesleri önceden üretilmez (kotalı)."""
+    import closing
+    import voices
+    t0 = time.time()
+    mod = voices.moderator()
+    journalists = [p for p in voices.enabled() if p.get("provider") != "chirp"]
+    jobs = []
+    for screen in closing.OPENINGS:
+        profs = [mod] if screen == "press_conference" else journalists
+        for line in closing.OPENINGS[screen] + closing.CLOSINGS.get(screen, []):
+            for p in profs:
+                if p.get("provider") != "chirp":
+                    jobs.append((line, p))
+    made = 0
+    for line, p in jobs:
+        try:
+            if _ensure_cached(line, p):
+                made += 1
+        except Exception as e:
+            print(f"  [tts] önbellek: {p['id']} hazırlanamadı ({type(e).__name__})")
+    if made:
+        print(f"  [tts] {made} sabit cümle sesi hazırlandı ({time.time() - t0:.0f} sn)")
+
+
+def _cache_path(text: str, profile: dict | None) -> str:
+    import hashlib
+    p = effective(profile)          # hız değişince önbellek de yenilenir
+    key = hashlib.sha1("|".join([p.get("voice", C.TTS_VOICE), str(p.get("pitch")), str(p.get("rate")),
+                                 str(p.get("speaking_rate")), text]).encode("utf-8")).hexdigest()
+    return os.path.join(CACHE_DIR, key + ".mp3")
+
+
+def _ensure_cached(text: str, profile: dict | None) -> bool:
+    """Önbellekte yoksa üretir; yeni üretildiyse True."""
+    import shutil
+    cached = _cache_path(text, profile)
+    if os.path.exists(cached):
+        return False
+    tmp = prepare(text, profile)
+    if not tmp or not os.path.getsize(tmp):
+        return False
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    shutil.move(tmp, cached)
+    return True
 
 
 _mixer_ready = False
@@ -130,6 +224,7 @@ def speak(text: str, should_abort=None, profile: dict | None = None):
 speak.abortable = True
 speak.voiced = True        # prepare/speak ses profili alır
 speak.reset = reset_output
+speak.prepare_cached = prepare_cached
 speak.prepare = prepare
 speak.play = play
 

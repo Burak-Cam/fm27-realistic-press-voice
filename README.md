@@ -50,6 +50,8 @@ Uygulama kendi sayacıyla ayda 500 bin, günde 40 bin karakterde durur ve edge-t
 `start.bat devices` ile listele, sonra adının bir parçasıyla seç: `setx FM_MIC "Kulaklık"`, `setx FM_SPEAKER "Kulaklık"`
 (yeni pencere aç). Cihaz takılı değilse varsayılana döner. Çıkış cihazı her toplantı başında yeniden seçilir.
 
+**Okuma hızı:** Varsayılan +12%. Değiştirmek için `setx FM_TTS_SPEED "20"` (0 = doğal hız).
+
 **Bas-konuş:** Varsayılan F8 (`FM_HOTKEY` ile değişir); kaydı başlatmak için bas, bitirmek için tekrar bas. Bip sesi kaydın başladığını/bittiğini bildirir.
 Cevap beklenirken tuş oyuna iletilmez. Değiştirmek için `set FM_HOTKEY=f8`.
 
