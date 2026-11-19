@@ -44,6 +44,21 @@ uygun olarak yeniden yazıldı.
 | Kulüp gündemi | Yönetimdeki istifalar takımı etkiler mi? |
 | Fikstür / yorgunluk | Üç günde bir maç oynuyorsunuz. Oyuncuların fiziksel durumu nasıl? |
 
+## Liglere göre gözlemler
+Tam transkript az; kulüp siteleri ve spor medyasının özetleri/canlı anlatımları incelendi. Örnekler kalıba göre yazıldı.
+
+| Lig | En sık konular | Tipik soru biçimi |
+|---|---|---|
+| **İngiltere** | sakatlık güncellemesi, form/tepki (kötü sonuç sonrası), derbi, rakip (yeni hoca), tek oyuncu kullanımı, tekrarlayan zaaf (geç gol, düşük xG'li gol), şampiyonluk baskısı, sözleşme; maç sonu: anın anlamı, tek oyuncu, istatistik (rakibe isabetli şut yok), penaltı | "Is there an update on...?", "How big a win is this?", "Talk us through the decision to...", "What did you say at half-time?" |
+| **Almanya** | Personalsituation (kadro/sakat listesi) neredeyse her toplantının ilk sorusu, rotasyon (Englische Woche: haftada iki maç), tek oyuncunun fitness'ı, tablo hedefi, sözleşme/gelecek, kulüp gündemi en sonda | "Wie sieht die Personalsituation aus?", "Werden Sie rotieren?", "Stimmt es, dass...?" (doğrulama sorusu) |
+| **İspanya** | bajas (eksikler) ve cezalılar en başta, rotaciones ve yorgunluk, ilk 11/sistem, rakibin yıldızını durdurmak, rekor/seri, Avrupa/ilk dört hedefi, hakem ataması ve hakem tartışmaları (özellikle büyük maçlarda), rakiple sözlü atışmalar, hocanın eski kulübü | "¿Cómo está la plantilla?", "¿Habrá rotaciones?", "¿Cómo se frena a...?", "¿Qué opina de la designación arbitral?" |
+| **İtalya** | sakatlık ve kadro (en yoğun), diziliş/modulo (üçlü-dörtlü savunma, iki forvet), rakip analizi, genç oyuncuya şans, transfer/sözleşme, Scudetto/Avrupa hedefi, kupa elenmesi sonrası moral, rakip hocanın sözlerine cevap, derbi anıları | "Come sta la squadra?", "Che modulo?", "Cosa significherebbe una vittoria per lo Scudetto?" |
+| **Türkiye** | maç sonu: genel değerlendirme, kırılma anı (frikik golü vb.), seri/rekor, tek oyuncu (rolü, katkısı), sakatlıklar, milli takım, zemin/stat, şampiyonluk hedefi; maç öncesi: rakip, eksikler, maç planı, oyuncu süreleri, kulüp gündemi (istifa), oyuncunun basına verdiği demeç; hakem kararları ve derbi gerginliği | "Hocam iyi akşamlar/tebrikler/geçmiş olsun..." açılışı, ardından tek soru; bazen "iki sorum olacak" |
+
+Ortak çıkarım: her ligde toplantı **kadro/sakatlık** ile başlar (maç öncesi) ya da **sonucun anlamı** ile başlar (maç sonu);
+sonra **tek oyuncu**, **taktik/değişiklik**, **puan durumu**, en sonda **kulüp gündemi / tartışma** gelir. Sorular kısa,
+tek olguya dayalı ve düz dillidir; muhabirin tavrı sorunun açısını belirler, kelimelerini değil.
+
 ## Kaynaklar (incelenen örnekler)
 - [Arteta, maç sonu basın toplantısı transkripti (Liverpool)](https://www.arsenal.com/news/every-word-from-artetas-post-liverpool-presser-aljhi7k2Bpyy)
 - [Arteta, maç öncesi basın toplantısı transkripti (Tottenham)](https://www.arsenal.com/news/every-word-artetas-pre-tottenham-presser-2)
@@ -51,3 +66,10 @@ uygun olarak yeniden yazıldı.
 - [Okan Buruk, maç sonu basın toplantısı (Fanatik)](https://www.fanatik.com.tr/galatasaray/galatasaray-teknik-direktoru-okan-buruk-oyun-olarak-da-puan-olarak-da-mutluyuz-2643759)
 - [İsmail Kartal, Roma maçı öncesi (Fanatik canlı)](https://www.fanatik.com.tr/fenerbahce/live-fenerbahcede-ismail-kartaldan-roma-maci-oncesi-marco-asensio-sorusuna-yanit-2637205)
 - [Mourinho, maç sonu kadro değişikliği / hakem soruları (Fanatik)](https://www.fanatik.com.tr/fenerbahce/hatayspor-maglubiyeti-sonrasi-fenerbahcede-jose-mourinho-hata-ile-maci-kaybettik-2583245)
+- [Inzaghi, Inter-Juventus öncesi basın toplantısı (Sky Sport)](https://sport.sky.it/calcio/serie-a/2024/10/26/inter-juve-inzaghi-conferenza-video)
+- [Serie A 14. hafta, tüm hocaların maç öncesi toplantıları (Fantamaster)](https://www.fantamaster.it/conferenza-stampa-14-giornata-seriea-2025-2026-parole-tutti-allenatori/)
+- [Tuchel, Bayern basın toplantısı canlı anlatım (leinetal24)](https://www.leinetal24.de/sport/fussball/rangnick-live-ticker-bayern-pk-bundesliga-trainer-suche-chaos-tuchel-zr-93048585.html)
+- [Kompany, Bayern kadro durumu (echo24)](https://www.echo24.de/sport/fussball/beim-fc-bayern-nimmt-kompany-ungewoehnlich-deutlich-zur-personallage-stellung-zr-93907365.html)
+- [Mourinho ve Flick, El Clásico öncesi (Comuniate)](https://www.comuniate.com/noticias/38645/mourinho-y-flick-preparan-un-clasico-marcado-por-las-bajas-la-presion-y-los-arbitros)
+- [Marcelino, maç öncesi: eksikler, rotasyon, rekorlar, rakip (Comuniate)](https://www.comuniate.com/noticias/36189/rueda-de-prensa-de-marcelino-sobre-las-bajas-rotaciones-records-el-rival)
+- [Giráldez, maç öncesi: oyuncular, rotasyon, rakip (Futbol Fantasy)](https://www.futbolfantasy.com/laliga/noticias/134070-giraldez-habla-de-carreira-rueda-sotelo-starfelt-radu-iglesias-damian-aspas-moriba-las-rotaci)

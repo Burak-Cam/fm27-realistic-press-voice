@@ -27,6 +27,9 @@ STYLE_POST = """Maç sonu:
 - Hakem: "30. dakikadaki pozisyonda penaltı beklediniz mi?"
 - Seri / puan: "Bu sonuçla liderle fark üç puana indi. Yarışı nasıl görüyorsunuz?"
 - Sakatlık: "Osimhen ikinci yarıda topallayarak çıktı. Durumu hakkında bilgi var mı?"
+- Devre arası: "İkinci yarıya bambaşka bir takım çıktı. Devre arasında oyunculara ne söylediniz?"
+- Sonucun anlamı: "Bu deplasmanda uzun süredir kazanılamıyordu. Bu galibiyet sizin için ne ifade ediyor?"
+- Sistem: "İkinci yarıda üçlü savunmaya geçtiniz. Bu kararı neye göre verdiniz?"
 """
 STYLE_PRE = """Maç öncesi:
 - Kadro: "Hocam, sakat oyuncularınızın son durumu ne? Yarın kimler forma giyebilecek?"
@@ -36,6 +39,9 @@ STYLE_PRE = """Maç öncesi:
 - Oyuncu kullanımı: "Genç oyuncunuz son maçlarda süre bulamıyor. Yarın şans verecek misiniz?"
 - Tekrarlayan zaaf: "Son maçlarda hep son 15 dakikada gol yediniz. Bunun üzerine çalıştınız mı?"
 - Baskı: "Zirvede fark açılıyor. Bu maç sizin için final niteliğinde mi?"
+- Rotasyon: "Üç gün içinde iki maç oynayacaksınız. Kadroda rotasyona gidecek misiniz?"
+- Rakibin yıldızı: "Rakibin golcüsü son dört maçta beş gol attı. Onu durdurmak için özel bir planınız var mı?"
+- Hakem / gündem: "Maçın hakemi açıklandı, kulübünüzden tepki geldi. Siz ne düşünüyorsunuz?"
 """
 
 
