@@ -208,3 +208,22 @@ def recent_summary(max_age_min: float = 120) -> dict | None:
         print(f"  [maç] özet çıkarılamadı: {e!r}")
         return None
     return s if len(s) > 2 else None
+
+
+def previous_summary(max_age_days: float = 7) -> dict | None:
+    """Maç öncesi için: en son TAMAMLANMIŞ maçın özeti (end satırı olan, 80. dakikayı görmüş). O an başlamış
+    güncel maçın kaydı alınmaz."""
+    files = sorted(glob.glob(os.path.join(MATCH_DIR, "match_*.jsonl")), key=os.path.getmtime, reverse=True)
+    for f in files:
+        if time.time() - os.path.getmtime(f) > max_age_days * 86400:
+            break
+        try:
+            rows = load(f)
+        except OSError:
+            continue
+        end = next((r for r in reversed(rows) if r.get("type") == "end"), None)
+        if not end or not _minute(end.get("t")).isdigit() or int(_minute(end.get("t"))) < 80:
+            continue
+        s = summarize(rows)
+        return s if len(s) > 2 else None
+    return None

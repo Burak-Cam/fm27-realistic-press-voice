@@ -218,7 +218,12 @@ class PressSession:
         print(f"  Oyunun sorusu: {st.get('game_question')}")
 
         match = st.get("match") or self.match
-        if match is None and st.get("screen") != "tunnel_interview":   # maç öncesi saha röportajında maç henüz oynanmadı
+        if match is None and st.get("screen") == "tunnel_interview":   # maç öncesi: bu maç oynanmadı, geçen maç
+            prev = match_log.previous_summary()
+            if prev:
+                match = {"GECEN_MAC (bugünkü maç DEĞİL, geçen maç)": prev}
+                print(f"  [maç] geçen maç: {prev.get('takimlar')} {prev.get('skor', '')}")
+        elif match is None:
             match = match_log.recent_summary()
             if match:
                 match = match_log.mark_manager_team(match, st.get("opponent"))

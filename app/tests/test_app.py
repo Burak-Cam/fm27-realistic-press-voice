@@ -595,9 +595,11 @@ def test_match_summary_used_after_match(tmp_path, monkeypatch):
                      log_dir=str(tmp_path / "logs"))
     s.handle(st)
     assert "direkten" in prompts[0] and "2,77" in prompts[0]
-    st2 = dict(st, screen="tunnel_interview", question_id="x2")                 # maç öncesi: kullanılmaz
+    st2 = dict(st, screen="tunnel_interview", question_id="x2")                 # maç öncesi: GEÇEN maç olarak
     prompts.clear()
     s2 = PressSession(_FakeIO(st2), lambda *a, **k: None, lambda abort: "cevap", follow_up_prob=0,
                       log_dir=str(tmp_path / "logs2"))
     s2.handle(st2)
-    assert "direkten" not in prompts[0]
+    assert "GECEN_MAC" in prompts[0] and "saha kenarı (TV)" in prompts[0]
+    f.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in _match_rows()[:-1]), encoding="utf-8")
+    assert match.previous_summary() is None                                     # bitmemiş (güncel) maç alınmaz

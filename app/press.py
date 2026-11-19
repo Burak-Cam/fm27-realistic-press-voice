@@ -57,6 +57,17 @@ puan durumu/baskı, form ve son sonuca tepki, taktik/tekrarlayan zaaf, tek oyunc
 """
 
 
+STYLE_TUNNEL_PRE = """Maç öncesi saha kenarı (TV) röportajı: basın toplantısından da kısa, tek konu, maça dakikalar var:
+- İlk 11: "Hocam, bugün ilk 11'de sürpriz bir tercihiniz var. Bunun sebebi ne?"
+- Maç planı: "Rakip son maçlarda önde baskı yapıyor. Bugün nasıl bir oyun planıyla çıkıyorsunuz?"
+- Rakibin yıldızı: "Rakibin en golcü oyuncusu bu sezon sekiz gol attı. Ona karşı özel bir önlem var mı?"
+- Geçen maç: "Geçen hafta erken gol yediniz. Bugün başlangıca özellikle dikkat edecek misiniz?"
+- Eksik: "Kaptanınız sakatlık nedeniyle yok. Onun yokluğunu nasıl telafi edeceksiniz?"
+- Atmosfer: "Tribünler dolu, derbi havası var. Oyunculara son olarak ne söylediniz?"
+- Hedef: "Bu maçı kazanırsanız zirveye yaklaşacaksınız. Takım bu baskıyı nasıl taşıyor?"
+"""
+
+
 def _options_text(state: dict) -> str:
     lines = []
     for c in state.get("categories", []):
@@ -106,7 +117,11 @@ def generate_question(state: dict, match: dict | None = None, history: list[dict
     prev = state.get("previous_npc_bubbles") or []
     post = bool(match) or state.get("screen") == "post_match_tunnel_interview" or state.get("event_hint") == "post_match"
     pre = state.get("screen") == "tunnel_interview" or state.get("event_hint") == "pre_match"
-    examples = STYLE_POST if post else STYLE_PRE if pre else STYLE_POST + "\n" + STYLE_PRE
+    tunnel_pre = state.get("screen") == "tunnel_interview"
+    if tunnel_pre:
+        post = False                               # geçen maç verisi olsa bile bu bir maç öncesi röportajı
+    examples = (STYLE_TUNNEL_PRE if tunnel_pre else STYLE_POST if post else STYLE_PRE if pre
+                else STYLE_POST + "\n" + STYLE_PRE)
     prompt = f"""GOREV: SORU
 Football Manager kariyerinde Türkçe bir {SCREEN_TR.get(state.get('screen'), 'basın etkinliği')} var. Sen gerçek bir Türk spor
 muhabirisin: {_journalist_text(state)}. Görevin oyunun sorusunu, GERÇEK basın toplantılarında sorulan bir soru gibi
