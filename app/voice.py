@@ -160,6 +160,10 @@ def load_stt():
             # ısınma: ilk gerçek cevap yavaş olmasın (ilk çözümleme ~15 sn sürüyordu)
             noise = (np.random.default_rng(0).standard_normal(SR * 2) * 0.01).astype(np.float32)
             list(_model.transcribe(noise, language="tr", beam_size=1, vad_filter=False)[0])
+            # gerçek yol: sessizlik ayıklayıcı (VAD) ilk kullanımda yükleniyor -> onu da ısıt
+            t = np.arange(SR * 2) / SR
+            tone = (0.2 * np.sin(2 * np.pi * 220 * t) * (np.sin(2 * np.pi * 3 * t) > 0)).astype(np.float32)
+            list(_model.transcribe(tone, language="tr", beam_size=1, vad_filter=True)[0])
             print(f"  [stt] {C.WHISPER_MODEL} yüklendi ve ısındı ({time.time() - t0:.1f} sn)")
     return _model
 

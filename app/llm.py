@@ -24,7 +24,11 @@ _http = requests.Session()   # bağlantıyı açık tut (her çağrıda TLS el s
 
 
 def _post(url, **kw):
-    r = _http.post(url, timeout=C.LLM_TIMEOUT, **kw)
+    try:
+        r = _http.post(url, timeout=C.LLM_TIMEOUT, **kw)
+    except requests.ConnectionError:
+        # sunucu boşta kalan bağlantıyı kapatmış olabilir ("Remote end closed connection"): yeni bağlantıyla bir kez daha
+        r = _http.post(url, timeout=C.LLM_TIMEOUT, **kw)
     if r.status_code == 429:
         raise LLMError(f"kota/oran sınırı (429): {r.text[:200]}")
     if r.status_code >= 400:

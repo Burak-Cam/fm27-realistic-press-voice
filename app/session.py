@@ -43,6 +43,7 @@ class PressSession:
         self.answered = 0
         self.seen = 0              # bu toplantıda görülen soru sayısı
         self.fu_asked: set[str] = set()   # bu toplantıda takip sorusu sorulmuş gazeteciler
+        self.introduced: set[str] = set() # bu toplantıda kendini tanıtmış gazeteciler
         self._opening = None       # açılış cümlesini okuyan arka plan iş parçacığı
         self.voicebook = voices.VoiceBook(os.path.join(self.log_dir, "voices_map.json"))
         self.closed = False        # kapanış cümlesi söylendi mi
@@ -59,6 +60,7 @@ class PressSession:
             if active and not was_active:
                 self.seen, self.closed = 0, False
                 self.fu_asked = set()
+                self.introduced = set()
                 self.voicebook.new_conference()
                 reset = getattr(self.speak, "reset", None)
                 if reset:
@@ -195,7 +197,11 @@ class PressSession:
 
         match = st.get("match") or self.match
         status.set("generating")
-        gen = press.generate_question(st, match, self.history)
+        jn = (st.get("journalist") or {}).get("name")
+        first = bool(jn) and jn not in self.introduced
+        if first:
+            self.introduced.add(jn)
+        gen = press.generate_question(st, match, self.history, introduce=first)
         question = gen["question"]
         print(f"  Soru [{gen['source']}, {gen['event']}, {time.time() - t0:.1f} sn]: {question}")
         if self._current_qid() != qid:

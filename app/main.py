@@ -67,8 +67,10 @@ def cmd_live(a):
         import voice
         threading.Thread(target=voice.warm_voices, daemon=True).start()
     status.start(C.BRIDGE_DIR)
+    status.set("loading", "Ses tanıma yükleniyor, birkaç saniye...")
     match = json.load(open(a.match, encoding="utf-8")) if a.match else None
     s = PressSession(BridgeIO(), _speaker(not a.no_tts), _listener(a.text), match=match, follow_up_prob=a.follow_up)
+    status.set("idle")
     try:
         s.run()
     except KeyboardInterrupt:

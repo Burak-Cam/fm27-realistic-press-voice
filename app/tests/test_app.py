@@ -405,3 +405,40 @@ def test_device_selection():
     assert devices.pick_output(outs, "kulaklık") == "Kulaklık (HyperX Cloud II)"
     assert devices.pick_output(outs, "0") == outs[0]
     assert devices.pick_output(outs, "yok") is None
+
+
+def test_fan_voice_detected():
+    import press
+    for bad in ["aldığımız bu skor bizi gerçekten hayal kırıklığına uğrattı",
+                "çıkan dokuz kart bizi çok üzdü",
+                "maç genelindeki oyunumuzu ve aldığımız bu mağlubiyeti nasıl değerlendiriyorsunuz?",
+                "Derbiyi kaybettik hocam, ne düşünüyorsunuz?"]:
+        assert press.speaks_as_fan(bad), bad
+    for ok in ["Hocam, takımınızın bugünkü performansını nasıl değerlendiriyorsunuz?",
+               "Aldığınız bu sonuç sizi hayal kırıklığına uğrattı mı?",
+               "Hocam merhaba, Berkan Koç, Habertürk. Dokuz kartlık bu sert maçı bekliyor muydunuz?"]:
+        assert not press.speaks_as_fan(ok), ok
+
+
+def test_fan_voice_rewritten(tmp_path):
+    import press
+    answers = iter([{"question": "Aldığımız skor bizi üzdü, ne diyorsunuz?", "event": "post_match"},
+                    {"question": "Aldığınız skor sizi üzdü mü?", "event": "post_match"}])
+    llm.set_mock(lambda p, t: next(answers))
+    g = press.generate_question(load_states()[0])
+    assert g["question"] == "Aldığınız skor sizi üzdü mü?"
+
+
+def test_journalist_introduces_only_first_time(tmp_path):
+    prompts = []
+    llm.set_mock(lambda p, t: prompts.append(p) or ({"question": "S", "event": "post_match"} if t == "question" else
+                 {"category_index": 0, "option_index": 0, "display_text": "D", "follow_up": None}))
+    st = dict(load_states()[0], active=True, ready=True)
+    io = _FakeIO(st)
+    s = PressSession(io, lambda *a, **k: None, lambda abort: "cevap", follow_up_prob=0, log_dir=str(tmp_path / "logs"))
+    s.handle(st)
+    st2 = dict(st, question_id="ikinci")
+    io.state = st2
+    s.handle(st2)
+    qp = [p for p in prompts if p.startswith("GOREV: SORU")]
+    assert "İLK sorun" in qp[0] and "Kendini TANITMA" in qp[1]

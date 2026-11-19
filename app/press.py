@@ -25,6 +25,14 @@ def _options_text(state: dict) -> str:
     return "\n".join(lines)
 
 
+def _intro_example(state: dict) -> str:
+    j = state.get("journalist") or {}
+    name, outlet = j.get("name") or "", j.get("outlet") or ""
+    if name and outlet:
+        return f"Hocam merhaba, {name}, {outlet}."
+    return f"Hocam merhaba, {name or outlet}." if (name or outlet) else "Hocam merhaba."
+
+
 def _journalist_text(state: dict) -> str:
     j = state.get("journalist") or {}
     return f"{j.get('name') or 'Bir gazeteci'} ({j.get('outlet') or 'yayın organı bilinmiyor'}), ruh hali: {j.get('mood') or 'bilinmiyor'}"
@@ -36,8 +44,23 @@ def _history_text(history: list[dict]) -> str:
     return "\n".join(f"- S: {h['question']}\n  C: {h.get('display_text') or h.get('answer')}" for h in history[-6:])
 
 
-def generate_question(state: dict, match: dict | None = None, history: list[dict] | None = None) -> dict:
-    """{"question": str, "event": str}. LLM başarısızsa oyunun kendi sorusu döner."""
+_WE = re.compile(
+    r"\b(biz|bizi|bize|bizim|bizce|bizler)\b|"
+    r"\b(takım|oyun|maç|skor|galibiyet|mağlubiyet|yenilgi|taraftar|kulüb|aldığ|kaybettiğ|attığ|yediğ|"
+    r"oyuncular|hedef|sezon)(ımız|imiz|umuz|ümüz)\w*|"
+    r"\b(saha|ev|lig|forma|seri|kale|defans|hücum|orta saha)(mız|miz|muz|müz|ımız|imiz)\w*|"
+    r"\b(kaybettik|yenildik|kazandık|aldık|oynadık|attık|yedik)\b", re.IGNORECASE)
+
+
+def speaks_as_fan(q: str) -> bool:
+    """Gazeteci kulüp adına 'biz' diye konuşuyor mu? (taraftar ağzı)"""
+    return bool(_WE.search(q or ""))
+
+
+def generate_question(state: dict, match: dict | None = None, history: list[dict] | None = None,
+                      introduce: bool = False) -> dict:
+    """{"question": str, "event": str}. LLM başarısızsa oyunun kendi sorusu döner.
+    introduce: bu gazetecinin bu toplantıdaki ilk sorusu (kısa tanıtımla başlar)."""
     game_q = state.get("game_question") or ""
     prev = state.get("previous_npc_bubbles") or []
     prompt = f"""GOREV: SORU
@@ -64,7 +87,10 @@ Yapılacak:
 1. Orijinal sorunun KONUSUNU ve NİYETİNİ koruyarak soruyu yeniden yaz; yukarıdaki cevap seçenekleri senin sorun için de
    anlamlı kalmalı. Konuyu değiştirme, yeni konu açma.
 2. Uygunsa maç verisinden somut bir ayrıntı ekle (skor, gol dakikası, xG, şut, kart, form, sıralama). Veride yoksa ekleme.
-3. TON: Sen profesyonel, saygılı bir spor muhabirisin, taraftar DEĞİLSİN. Ruh hali soruya sadece hafif bir renk katar:
+3. TON: Sen profesyonel, saygılı bir spor muhabirisin, taraftar DEĞİLSİN. Kulüple duygusal bağın yok: ASLA "biz",
+   "bizi", "takımımız", "aldığımız skor", "oyunumuz" deme; takım için "takımınız", "siz" de. Ruh hali gazetecinin
+   teknik direktöre karşı TAVRIDIR (üzgün = sonuca mesafeli/eleştirel bakan muhabir, kendisi üzülmüş taraftar değil).
+   Ruh hali soruya sadece hafif bir renk katar:
    - olumlu ruh hali: sıcak ve meraklı ama ölçülü. Tezahürat ve abartı YOK ("tebrik ederim", "havalara uçurdu",
      "muhteşem zafer" gibi ifadeler kullanma).
    - nötr: tarafsız, bilgi isteyen.
@@ -73,7 +99,7 @@ Yapılacak:
      kötüleyen yargılar ("kısır", "tutku eksikliği", "maskeledi", "endişe verici") kurma; merak eden bir soru sor.
    ASLA hakaret, alay, iğneleme, suçlama, provokasyon yok. Teknik direktöre söylemediği sözleri ya da yapmadığı şeyleri
    ATFETME ("övüp duruyorsunuz", "yine kaçamak cevap veriyorsunuz" gibi). Sonuçla çelişen felaket dili kullanma.
-4. Kendini TANITMA (isim veya yayın organı söyleme); gerekiyorsa sadece "Hocam" diye hitap et.
+4. {('Bu senin bu toplantıdaki İLK sorun: çok kısa bir tanıtımla başla, örn. "' + _intro_example(state) + '" sonra soruyu sor.') if introduce else 'Kendini TANITMA (isim veya yayın organı söyleme); gerekiyorsa sadece "Hocam" diye hitap et.'}
 5. Teknik direktör bu toplantıda bir soruyu cevaplamak istemediyse o konunun üstüne gitme. Oyun soruyu yineliyorsa
    ("Sorumu yineliyorum" gibi) asıl soruyu kısa ve nazikçe tekrar sor ("Hocam, soruyu bir kez daha sorayım: ..."),
    önceki cevabı yorumlama, ısrarcı ya da suçlayıcı olma.
@@ -84,6 +110,13 @@ Sadece JSON döndür: {{"question": "...", "event": "..."}}"""
     try:
         r = ask(prompt, task="question")
         q = (r.get("question") or "").strip()
+        if speaks_as_fan(q):                       # taraftar ağzı: bir kez düzelttir
+            print(f"  [press] 'biz' dili, düzeltiliyor: {q}")
+            fix = ask(prompt + f'\n\nÖNCEKİ DENEMEN HATALIYDI ("{q}"): kulüp adına "biz/bizim/-ımız" dili kullandın. '
+                      'Tarafsız muhabir olarak "siz/takımınız" diliyle yeniden yaz. Sadece JSON.', task="question")
+            q2 = (fix.get("question") or "").strip()
+            if q2 and not speaks_as_fan(q2):
+                q, r = q2, fix
         ev = r.get("event") if r.get("event") in EVENTS else (state.get("event_hint") or "other")
         if not q:
             raise LLMError("boş soru")

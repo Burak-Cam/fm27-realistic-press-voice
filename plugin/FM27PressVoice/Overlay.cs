@@ -15,7 +15,7 @@ namespace FM27PressVoice;
 internal static class Overlay
 {
     static string StatusPath => Path.Combine(Paths.BepInExRootPath, "fm27pressvoice", "app_status.json");
-    const long AliveMs = 4000;   // app her ~1 sn'de yazar; bu kadar süre yazmazsa kapalı say
+    const long AliveMs = 30000;  // app her ~1 sn'de yazar; yoğun işlemde (Whisper) gecikebilir -> 30 sn yazmazsa kapalı say
     const string ElementName = "FM27PressVoiceOverlay";
 
     static float _nextRead, _nextFront;
