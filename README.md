@@ -40,6 +40,12 @@ setx GEMINI_API_KEY "<aistudio.google.com/apikey adresinden alınan anahtar>"
 **Gazeteci sesleri:** Her gazetecinin kendi sesi var (kadın/erkek, adına göre). `start.bat voices` tüm sesleri sırayla
 çalar; beğenmediklerini `setx FM_VOICES_OFF "brian,thalita"` gibi kapat. Moderatör sesi `FM_MODERATOR_VOICE`.
 
+**Daha iyi sesler (isteğe bağlı, Google Chirp 3 HD):** 14 farklı Türkçe gazeteci sesi. Kendi Google Cloud projende
+"Cloud Text-to-Speech API"yi etkinleştirip bir API anahtarı oluştur, sadece bu API ile sınırla ve
+`setx GOOGLE_TTS_API_KEY "..."` ile kaydet. Google'ın ücretsiz kotası aylık 1 milyon karakter (sonrası $30 / 1M).
+Uygulama kendi sayacıyla ayda 500 bin, günde 40 bin karakterde durur ve edge-tts'e geçer
+(`FM_CHIRP_MONTHLY_CHARS`, `FM_CHIRP_DAILY_CHARS`). Anahtar yoksa edge-tts kullanılır.
+
 **Bas-konuş:** Varsayılan F8 (`FM_HOTKEY` ile değişir); kaydı başlatmak için bas, bitirmek için tekrar bas. Bip sesi kaydın başladığını/bittiğini bildirir.
 Cevap beklenirken tuş oyuna iletilmez. Değiştirmek için `set FM_HOTKEY=f8`.
 
