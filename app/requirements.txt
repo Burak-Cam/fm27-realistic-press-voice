@@ -1,0 +1,9 @@
+requests
+edge-tts
+pygame
+sounddevice
+numpy
+faster-whisper
+av<16  # av 16+ faster-whisper 1.2 ile uyumsuz (metadata_errors)
+keyboard
+pytest

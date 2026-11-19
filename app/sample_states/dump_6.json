@@ -1,0 +1,87 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "tunnel_interview",
+  "event_hint": "pre_match",
+  "question_id": "07f105970f40",
+  "ready": true,
+  "question_index": null,
+  "question_total": null,
+  "title": "Röportaj",
+  "opponent": "Gençlerbirliği",
+  "competition": "Trendyol Süper Lig",
+  "overall_mood": null,
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "Murat Ulu",
+    "outlet": "Türkiye Futbol Gazetesi",
+    "mood": "Üzgün",
+    "mood_class": "very-negative",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "Murat Ulu",
+      "outlet": "Türkiye Futbol Gazetesi",
+      "mood": "Üzgün",
+      "mood_class": "very-negative",
+      "active": true
+    }
+  ],
+  "game_question": "Bugün Gençlerbirliği'ne kiralık olarak yolladığınız Metehan Baltacı'na karşı sahaya çıkıyorsunuz. Bu durumla ilgili ne düşünüyorsunuz?",
+  "game_question_raw": "Bugün <link=\"0\"><style=\"Norml\">Gençlerbirliği</style></link>'ne kiralık olarak yolladığınız <link=\"1\"><style=\"Norml\">Metehan Baltacı</style></link>'na karşı sahaya çıkıyorsunuz. Bu durumla ilgili ne düşünüyorsunuz?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "İkna Et",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Bu durum maça daha fazla heyecan getiren, yeni bir boyut kazandırıyor. Kendisini sahada rakip olarak görmeye hazırız",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Kiralık olarak gitmesinin bir sebebi var, neler yapabileceğini göstermesi için eline bundan iyi fırsat geçemez",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Tek tek bireyleri tartışmanın zamanı değil diye düşünüyorum",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Önemseme",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Benim için rakibimizin diğer oyuncularıyla aynı statüde. Böyle hikayelere ayıracak zamanım yok",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Kiralık olarak yollarken bu maçın geleceğinin biliyorduk o yüzden bizim için özel bir durum yok",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

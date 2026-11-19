@@ -1,0 +1,150 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "press_conference",
+  "event_hint": null,
+  "question_id": "fcc97a1cd5fc",
+  "ready": true,
+  "question_index": 5,
+  "question_total": 6,
+  "title": "Basın Toplantısı",
+  "opponent": null,
+  "competition": null,
+  "overall_mood": "Belirsiz",
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "Roberto Camacho",
+    "outlet": "Madrid Resmi Futbol Gazetesi",
+    "mood": "Heveslendi",
+    "mood_class": "slightly-positive",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "Renée Van Engen",
+      "outlet": "Voetbalzone",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Óscar Sánchez",
+      "outlet": "İspanya Futbol Dergisi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Ertuğrul Yılmaz",
+      "outlet": "Türkiye Futbolunun Sesi Gazetesi",
+      "mood": "Üzgün",
+      "mood_class": "slightly-negative",
+      "active": false
+    },
+    {
+      "name": "Roberto Camacho",
+      "outlet": "Madrid Resmi Futbol Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": true
+    },
+    {
+      "name": "Yiğit Göktaş",
+      "outlet": "İstanbul'dan yayın yapan Aydınlık Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Olivia Burrows",
+      "outlet": "SPORTbible",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Giorgos Terzis",
+      "outlet": "Eurosport",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Cameron Austin",
+      "outlet": "90min.com",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Murat Ulu",
+      "outlet": "Türkiye Futbol Gazetesi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Tomás Martínez Fernández",
+      "outlet": "İspanya Futbol Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": false
+    }
+  ],
+  "game_question": "Ismail Jakobs gibi fiziksel kapasitesi yüksek bir oyuncuya sahip olmanın defansif anlamda avantajlarını nasıl değerlendirirsiniz hocam?",
+  "game_question_raw": "<link=\"0\"><style=\"Norml\">Ismail Jakobs</style></link> gibi fiziksel kapasitesi yüksek bir oyuncuya sahip olmanın defansif anlamda avantajlarını nasıl değerlendirirsiniz hocam?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "Olumlu",
+      "sentiment": "positive",
+      "options": [
+        {
+          "index": 0,
+          "text": "Sahadaki etkisi bizim için çok önemli, onun kadar etkili çok az oyuncu var",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Onun gibi bir oyuncunun kadromda olmasından ötürü çok şanslıyım ve oyunumuz için çok büyük bir önem teşkil ediyor",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Bireysel oyuncuları detaylı bir şekilde tartışmak için vaktim yok",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Olumsuz",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Elimi güçlendirdiği bir gerçek ama kadromdaki bütün oyuncuların yapması gereken şeyler var sahada ve özellikle de savunma anlamında bir dişli aksarsa bütün çark aksar",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Yapabildiklerini takdir ediyorum; ama artık kendime \"acaba başka neleri yapabilir?\" diye sorduğum bir noktadayız",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

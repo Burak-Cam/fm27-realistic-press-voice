@@ -1,0 +1,40 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "tunnel_interview",
+  "event_hint": "pre_match",
+  "question_id": "58aac96af8e2",
+  "ready": false,
+  "question_index": null,
+  "question_total": null,
+  "title": "Röportaj",
+  "opponent": "Fenerbahçe",
+  "competition": "Trendyol Süper Lig",
+  "overall_mood": null,
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "İlker Karakaş",
+    "outlet": "Türkiye Futbol Dergisi",
+    "mood": "Üzgün",
+    "mood_class": "very-negative",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "İlker Karakaş",
+      "outlet": "Türkiye Futbol Dergisi",
+      "mood": "Üzgün",
+      "mood_class": "very-negative",
+      "active": true
+    }
+  ],
+  "game_question": "Çok teşekkürler.",
+  "game_question_raw": "Çok teşekkürler.",
+  "previous_npc_bubbles": null,
+  "categories": [],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

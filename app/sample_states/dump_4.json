@@ -1,0 +1,87 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "post_match_tunnel_interview",
+  "event_hint": "post_match",
+  "question_id": "248ecc6eb142",
+  "ready": true,
+  "question_index": null,
+  "question_total": null,
+  "title": "Maç Sonrası Röportaj",
+  "opponent": "Fenerbahçe",
+  "competition": "Trendyol Süper Lig",
+  "overall_mood": null,
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "Ertuğrul Yılmaz",
+    "outlet": "Türkiye Futbolunun Sesi Gazetesi",
+    "mood": "Kısmen Olumlu",
+    "mood_class": "slightly-positive",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "Ertuğrul Yılmaz",
+      "outlet": "Türkiye Futbolunun Sesi Gazetesi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": true
+    }
+  ],
+  "game_question": "Galatasaray olarak, Yunus Akgün Fenerbahçe ile olan rekabete yabancı değil. Oyuncuların bu derbi maçlarındaki tutkuyu anlamaları ne kadar önemli?",
+  "game_question_raw": "<link=\"0\"><style=\"Norml\">Galatasaray</style></link> olarak, <link=\"1\"><style=\"Norml\">Yunus Akgün</style></link> <link=\"2\"><style=\"Norml\">Fenerbahçe</style></link> ile olan rekabete yabancı değil. Oyuncuların bu derbi maçlarındaki tutkuyu anlamaları ne kadar önemli?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "Olumlu",
+      "sentiment": "positive",
+      "options": [
+        {
+          "index": 0,
+          "text": "Kesinlikle bu maçlar onlar için farklı şeyler ifade ediyor ve sanırım bugün bunu sahaya yansıttılar",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Onlar maçın önemini biliyorlar ve diğer arkadaşlarının da bu önemi kavramalarını sağlıyorlar",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Bireyler hakkında tartışma başlatmaya hazır değilim",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Olumsuz",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Herhangi bir fark olacağını düşünmüyorum. Oyuncularımın hepsi profesyonel ve her rakibe karşı ellerinden gelenin en iyisini yapmaya çalışıyorlar",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Eğer kazanma şansımızı arttıracaksa sahaya 11 yabancıyla çıkarım",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

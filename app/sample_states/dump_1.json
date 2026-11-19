@@ -1,0 +1,87 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "tunnel_interview",
+  "event_hint": "pre_match",
+  "question_id": "8898261ae462",
+  "ready": true,
+  "question_index": null,
+  "question_total": null,
+  "title": "Röportaj",
+  "opponent": "Fenerbahçe",
+  "competition": "Trendyol Süper Lig",
+  "overall_mood": null,
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "İlker Karakaş",
+    "outlet": "Türkiye Futbol Dergisi",
+    "mood": "Üzgün",
+    "mood_class": "very-negative",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "İlker Karakaş",
+      "outlet": "Türkiye Futbol Dergisi",
+      "mood": "Üzgün",
+      "mood_class": "very-negative",
+      "active": true
+    }
+  ],
+  "game_question": "Derbi günü geldi çattı, yerel rakibinize karşı mücadele edecek olmaktan dolayı heyecanlı mısınız?",
+  "game_question_raw": "Derbi günü geldi çattı, yerel rakibinize karşı mücadele edecek olmaktan dolayı heyecanlı mısınız?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "Olumlu",
+      "sentiment": "positive",
+      "options": [
+        {
+          "index": 0,
+          "text": "Böyle günler taraftarların, oyuncuların ve menajerlerin âdeta yaşama sebebidir ve ben de maçın başlaması için sabırsızlanıyorum. Kendimize güveniyor ve hazır hissediyoruz",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Şahsen daima bunu beklerdim, tüm hafta antrenman sahası etrafında gerçek bir uğuldama söz konusuydu ve şimdi oraya çıkacağız ve oyunumuzu ortaya koyacağız",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Taraftarlar bu maça her şeyden çok önem veriyor ancak biz bunu da normal bir maçmış gibi görmeliyiz",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Olumsuz",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Bu maçları seviyorum diyemem çünkü tahmin edilmeleri imkânsız, her şey olabilir ve genellikle oluyor da",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Taraftarımızı üzecek bir sonuç almak istemiyoruz. Yenilgi alırsak elbette ki hayal kırıklığı yaşayacağız fakat bu, taraftarımızın yaşayacağı kadar olmayacaktır",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

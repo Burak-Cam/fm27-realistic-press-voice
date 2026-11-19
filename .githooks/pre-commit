@@ -1,0 +1,59 @@
+#!/bin/sh
+# GİZLİ ANAHTAR ENGELİ: repo PUBLIC. Commit'e eklenen satırlarda API anahtarı / gizli bilgi varsa commit'i durdurur.
+# Etkin olması için (repo başına bir kez):  git config core.hooksPath .githooks
+# Bulunan değer ASLA ekrana yazılmaz; sadece dosya adı ve kural adı gösterilir.
+# Atlamak (--no-verify) YASAK; yanlış alarm varsa deseni burada daralt.
+
+fail=0
+report() { echo "ENGELLENDİ: $1 -> $2" >&2; fail=1; }
+
+# 1) Yasak dosya adları
+for f in $(git diff --cached --name-only --diff-filter=ACMR); do
+  case "$f" in
+    *.env|.env|.env.*|*.pem|*.p12|*.pfx|*.key|*credentials*.json|*service-account*.json|*serviceaccount*.json|*secret*.json)
+      report "$f" "gizli dosya türü" ;;
+  esac
+done
+
+# 2) Eklenen satırlarda bilinen anahtar desenleri
+added=$(git diff --cached -U0 --no-color --diff-filter=ACMR | grep '^+' | grep -v '^+++')
+check() {  # $1 = kural adı, $2 = ERE deseni
+  if printf '%s\n' "$added" | grep -Eq -- "$2"; then
+    files=$(git diff --cached --name-only --diff-filter=ACMR | while read -r f; do
+      git diff --cached -U0 --no-color -- "$f" | grep '^+' | grep -v '^+++' | grep -Eq -- "$2" && printf '%s ' "$f"; done)
+    report "${files:-?}" "$1"
+  fi
+}
+check "Google API anahtarı (AIza...)"        'AIza[0-9A-Za-z_-]{30,}'
+check "Google OAuth / yeni tip anahtar (AQ.)" 'AQ\.[0-9A-Za-z_-]{30,}'
+check "OpenAI anahtarı (sk-...)"              'sk-(proj-)?[0-9A-Za-z_-]{20,}'
+check "Groq anahtarı (gsk_...)"               'gsk_[0-9A-Za-z]{20,}'
+check "ElevenLabs/genel uzun anahtar ataması" '(api[_-]?key|secret|token|password)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"'][0-9A-Za-z_./+-]{20,}'
+check "Özel anahtar bloğu"                    '-----BEGIN [A-Z ]*PRIVATE KEY-----'
+check "Servis hesabı JSON"                    '"type"[[:space:]]*:[[:space:]]*"service_account"'
+
+# 3) Bu bilgisayardaki GERÇEK anahtar değerleri (ortamdan + Windows kullanıcı değişkenlerinden)
+vals=""
+for n in GEMINI_API_KEY GOOGLE_TTS_API_KEY GROQ_API_KEY OPENAI_API_KEY ELEVENLABS_API_KEY; do
+  eval "v=\${$n}"
+  [ -n "$v" ] && vals="$vals
+$v"
+done
+if command -v powershell.exe >/dev/null 2>&1; then
+  wv=$(powershell.exe -NoProfile -NonInteractive -Command \
+    "foreach(\$n in 'GEMINI_API_KEY','GOOGLE_TTS_API_KEY','GROQ_API_KEY','OPENAI_API_KEY','ELEVENLABS_API_KEY'){[Environment]::GetEnvironmentVariable(\$n,'User')}" 2>/dev/null | tr -d '\r')
+  vals="$vals
+$wv"
+fi
+printf '%s\n' "$vals" | while IFS= read -r v; do
+  [ ${#v} -ge 16 ] || continue
+  if printf '%s\n' "$added" | grep -Fq -- "$v"; then echo X; fi
+done | grep -q X && report "(staged)" "bu bilgisayardaki GERÇEK bir API anahtarının değeri"
+
+if [ $fail -ne 0 ]; then
+  echo "" >&2
+  echo "Commit durduruldu: repo PUBLIC, anahtarlar sadece ortam değişkeninde (setx) durur." >&2
+  echo "Satırı kaldır: git restore --staged <dosya>  (ve dosyadan sil)" >&2
+  exit 1
+fi
+exit 0

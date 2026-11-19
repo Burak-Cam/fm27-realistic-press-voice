@@ -1,0 +1,150 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "press_conference",
+  "event_hint": null,
+  "question_id": "65799d80425c",
+  "ready": true,
+  "question_index": 2,
+  "question_total": 6,
+  "title": "Basın Toplantısı",
+  "opponent": null,
+  "competition": null,
+  "overall_mood": "Belirsiz",
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "Óscar Sánchez",
+    "outlet": "İspanya Futbol Dergisi",
+    "mood": "Kısmen Olumlu",
+    "mood_class": "slightly-positive",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "Renée Van Engen",
+      "outlet": "Voetbalzone",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Óscar Sánchez",
+      "outlet": "İspanya Futbol Dergisi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": true
+    },
+    {
+      "name": "Ertuğrul Yılmaz",
+      "outlet": "Türkiye Futbolunun Sesi Gazetesi",
+      "mood": "Üzgün",
+      "mood_class": "slightly-negative",
+      "active": false
+    },
+    {
+      "name": "Roberto Camacho",
+      "outlet": "Madrid Resmi Futbol Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Yiğit Göktaş",
+      "outlet": "İstanbul'dan yayın yapan Aydınlık Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Olivia Burrows",
+      "outlet": "SPORTbible",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Giorgos Terzis",
+      "outlet": "Eurosport",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Cameron Austin",
+      "outlet": "90min.com",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Murat Ulu",
+      "outlet": "Türkiye Futbol Gazetesi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Tomás Martínez Fernández",
+      "outlet": "İspanya Futbol Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": false
+    }
+  ],
+  "game_question": "Neden özellikle Mbappé? Onu diğerlerinden daha tehlikeli yapan şey ne sizce?",
+  "game_question_raw": "Neden özellikle <link=\"0\"><style=\"Norml\">Mbappé</style></link>? Onu diğerlerinden daha tehlikeli yapan şey ne sizce?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "Olumsuz",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Diğer oyunculardan kat be kat daha yüksek bir seviyede futbol oynuyor",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Real Madrid takım olarak çok iyi değiller, onları taşıyan isim kesinlikle Mbappé",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Olumlu",
+      "sentiment": "positive",
+      "options": [
+        {
+          "index": 0,
+          "text": "İstikrarlı bir şekilde olağanüstü performanslar sergileyen bir futbolcu olması bizim için büyük tehlike arz ediyor",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Son derece yetenekli ve sahada çeşitli roller alabilen çok tehlikeli bir futbolcu",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Sebepleri sizlere açıklamam pek doğru olmaz",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

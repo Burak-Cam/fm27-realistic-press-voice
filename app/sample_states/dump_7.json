@@ -1,0 +1,87 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "tunnel_interview",
+  "event_hint": "pre_match",
+  "question_id": "b0cb43a0f3c4",
+  "ready": true,
+  "question_index": null,
+  "question_total": null,
+  "title": "Röportaj",
+  "opponent": "Gençlerbirliği",
+  "competition": "Trendyol Süper Lig",
+  "overall_mood": null,
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "Murat Ulu",
+    "outlet": "Türkiye Futbol Gazetesi",
+    "mood": "Karamsar",
+    "mood_class": "very-negative",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "Murat Ulu",
+      "outlet": "Türkiye Futbol Gazetesi",
+      "mood": "Karamsar",
+      "mood_class": "very-negative",
+      "active": true
+    }
+  ],
+  "game_question": "Taraftarlar sizden bu konu hakkında kaçamak olmayan bir cevap duymak isteyeceklerdir. Sorumu yineliyorum: Maç öncesi soyunma odasındaki atmosfer nasıl?",
+  "game_question_raw": "Taraftarlar sizden bu konu hakkında kaçamak olmayan bir cevap duymak isteyeceklerdir. Sorumu yineliyorum: Maç öncesi soyunma odasındaki atmosfer nasıl?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "Olumlu",
+      "sentiment": "positive",
+      "options": [
+        {
+          "index": 0,
+          "text": "İyi hissediyoruz, takımın ruh hali oldukça güçlü. Geleceğe umutla bakıyoruz",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Özgüveni yüksek ve takım arkadaşlarına inanan bir kadroya sahip olmak çok iyi bir duygu",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Şu an bu konuyu konuşmak istemiyorum",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Olumsuz",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Soyunma odasındaki ve tesislerdeki atmosfer günden güne değişiyor",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Özellikle işlerin yolunda gitmediği zamanlarda, takım ruhunu ve oyuncularımın dikkatini korumak benim görevim",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

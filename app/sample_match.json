@@ -1,0 +1,12 @@
+{
+  "competition": "Super Lig, 12. hafta",
+  "home": "Fenerbahce", "away": "Trabzonspor", "venue": "home",
+  "score": "1-2", "result_for_user": "loss",
+  "possession": {"home": 62, "away": 38},
+  "shots": {"home": 19, "away": 7}, "shots_on_target": {"home": 5, "away": 3},
+  "xg": {"home": 2.4, "away": 0.9},
+  "cards": [{"min": 67, "team": "home", "player": "Savunma oyuncusu", "type": "red"}],
+  "goals": [{"min": 23, "team": "away"}, {"min": 55, "team": "home"}, {"min": 88, "team": "away"}],
+  "league_position_after": 4,
+  "form_last5": "WWDLL"
+}

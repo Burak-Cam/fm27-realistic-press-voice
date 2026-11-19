@@ -1,0 +1,35 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# Yerel / gizli — REPO PUBLIC: anahtarlar sadece ortam değişkeninde (setx), asla dosyada
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+*credentials*.json
+*service-account*.json
+*serviceaccount*.json
+*secret*.json
+*.log
+
+# Claude Code / kişisel çalışma notları: SADECE yerelde (repo public, uygulamayla ilgili olmayan hiçbir şey girmez)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+memory/
+MEMORY.md
+docs/open-questions.md
+
+# Uygulama kayıtları
+app/logs/

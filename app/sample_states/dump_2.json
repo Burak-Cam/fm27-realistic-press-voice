@@ -1,0 +1,87 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "tunnel_interview",
+  "event_hint": "pre_match",
+  "question_id": "900d8a5645a5",
+  "ready": true,
+  "question_index": null,
+  "question_total": null,
+  "title": "Röportaj",
+  "opponent": "Fenerbahçe",
+  "competition": "Trendyol Süper Lig",
+  "overall_mood": null,
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "İlker Karakaş",
+    "outlet": "Türkiye Futbol Dergisi",
+    "mood": "Üzgün",
+    "mood_class": "very-negative",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "İlker Karakaş",
+      "outlet": "Türkiye Futbol Dergisi",
+      "mood": "Üzgün",
+      "mood_class": "very-negative",
+      "active": true
+    }
+  ],
+  "game_question": "Fenerbahçe maçının oluşturduğu baskı ve beklentilerle başa çıkabileceğinizi düşünüyor musunuz?",
+  "game_question_raw": "<link=\"0\"><style=\"Norml\">Fenerbahçe</style></link> maçının oluşturduğu baskı ve beklentilerle başa çıkabileceğinizi düşünüyor musunuz?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "Hemfikir Ol",
+      "sentiment": "positive",
+      "options": [
+        {
+          "index": 0,
+          "text": "Biraz baskı hissetmemiz gayet normal. Önemli olan bu stresle nasıl başa çıktığımız",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Böyle maçlar hep zorlu geçmiştir",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Kaygılı olsam da size biraz zor söylerdim, değil mi?",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Görüşe Karşı Çık",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Dört gözle bekliyorum! Bu gibi maçlarda en iyi oyunumuzu sergiliyoruz ve sonuç olarak karşılığında edinme ihtimalimiz olan şeyler de daha büyük oluyor",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Maç öncesi kendimi gergin hissetmem. DNA'mda gerginlik yok",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

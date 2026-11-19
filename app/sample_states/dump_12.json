@@ -1,0 +1,150 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "press_conference",
+  "event_hint": null,
+  "question_id": "7362a5928957",
+  "ready": true,
+  "question_index": 4,
+  "question_total": 6,
+  "title": "Basın Toplantısı",
+  "opponent": null,
+  "competition": null,
+  "overall_mood": "Belirsiz",
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "Ertuğrul Yılmaz",
+    "outlet": "Türkiye Futbolunun Sesi Gazetesi",
+    "mood": "Üzgün",
+    "mood_class": "slightly-negative",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "Renée Van Engen",
+      "outlet": "Voetbalzone",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Óscar Sánchez",
+      "outlet": "İspanya Futbol Dergisi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Ertuğrul Yılmaz",
+      "outlet": "Türkiye Futbolunun Sesi Gazetesi",
+      "mood": "Üzgün",
+      "mood_class": "slightly-negative",
+      "active": true
+    },
+    {
+      "name": "Roberto Camacho",
+      "outlet": "Madrid Resmi Futbol Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Yiğit Göktaş",
+      "outlet": "İstanbul'dan yayın yapan Aydınlık Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Olivia Burrows",
+      "outlet": "SPORTbible",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Giorgos Terzis",
+      "outlet": "Eurosport",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Cameron Austin",
+      "outlet": "90min.com",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Murat Ulu",
+      "outlet": "Türkiye Futbol Gazetesi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Tomás Martínez Fernández",
+      "outlet": "İspanya Futbol Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": false
+    }
+  ],
+  "game_question": "Gençlerbirliği gibi bir takımla karşılaştıktan sonra bu maça çıkmak, sizin işinizi kolaylaştırıyor mu?",
+  "game_question_raw": "<link=\"0\"><style=\"Norml\">Gençlerbirliği</style></link> gibi bir takımla karşılaştıktan sonra bu maça çıkmak, sizin işinizi kolaylaştırıyor mu?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "Hemfikir Ol",
+      "sentiment": "positive",
+      "options": [
+        {
+          "index": 0,
+          "text": "Evet, sonuç itibarıyla bu maça daha iyi hazırlanabildik",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Bence, kolay maçlarla zor maçları dengeleyen bir fikstüre sahip olduğumuz için şanslı sayılırız",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Her zaman gelen maçı dikkate alırız",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Görüşe Karşı Çık",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Bu değerlendirmeyi yapmak Gençlerbirliği'ne saygısızlık olur",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Bunun bir avantaj sağlayacağını zannetmiyorum. Sonuçta Real Madrid'in bir önceki maçı da kolay maçtı. Yani bu açıdan iki taraf da eşit diyebiliriz",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}

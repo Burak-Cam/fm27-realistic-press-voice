@@ -1,0 +1,122 @@
+{
+  "v": 1,
+  "seq": 0,
+  "time": null,
+  "active": true,
+  "screen": "press_conference",
+  "event_hint": null,
+  "question_id": "bc8ff1313014",
+  "ready": true,
+  "question_index": 1,
+  "question_total": 5,
+  "title": "Basın Toplantısı",
+  "opponent": null,
+  "competition": null,
+  "overall_mood": "İfadesiz",
+  "manager_name": "Mehmet Demir",
+  "journalist": {
+    "name": "Murat Ulu",
+    "outlet": "Türkiye Futbol Gazetesi",
+    "mood": "Heveslendi",
+    "mood_class": "slightly-positive",
+    "active": true
+  },
+  "journalists": [
+    {
+      "name": "Yiğit Göktaş",
+      "outlet": "İstanbul'dan yayın yapan Aydınlık Gazetesi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Mustafa Gümüş",
+      "outlet": "Ankara'nın Sesi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    },
+    {
+      "name": "Berkan Koç",
+      "outlet": "Haberturk",
+      "mood": "Üzgün",
+      "mood_class": "slightly-negative",
+      "active": false
+    },
+    {
+      "name": "İlker Karakaş",
+      "outlet": "Türkiye Futbol Dergisi",
+      "mood": "Üzgün",
+      "mood_class": "slightly-negative",
+      "active": false
+    },
+    {
+      "name": "Murat Ulu",
+      "outlet": "Türkiye Futbol Gazetesi",
+      "mood": "Heveslendi",
+      "mood_class": "slightly-positive",
+      "active": true
+    },
+    {
+      "name": "Ertuğrul Yılmaz",
+      "outlet": "Türkiye Futbolunun Sesi Gazetesi",
+      "mood": "Kısmen Olumlu",
+      "mood_class": "slightly-positive",
+      "active": false
+    }
+  ],
+  "game_question": "Taktiksel bakış açısıyla değerlendirdiğinizde, sizce iki takımdan biri diğerine karşı üstünlük sağlayabildi mi?",
+  "game_question_raw": "Taktiksel bakış açısıyla değerlendirdiğinizde, sizce iki takımdan biri diğerine karşı üstünlük sağlayabildi mi?",
+  "previous_npc_bubbles": null,
+  "categories": [
+    {
+      "index": 0,
+      "title": "Olumlu",
+      "sentiment": "positive",
+      "options": [
+        {
+          "index": 0,
+          "text": "Bence bu büyüleyici bir maçtı ve izleyen herkesin de bir numaralı gündem maddesi olacaktır diye düşünüyorum",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "İyi yanından bakarsak, çok şey öğrendim. Şimdi gidip orada yaşananlarla bir daha karşılaşırsak nasıl tepki verebileceğimizi düşüneceğim",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "title": "Nötr",
+      "sentiment": "neutral",
+      "options": [
+        {
+          "index": 0,
+          "text": "Yanlış anlamazsanız, yapacağım daha önemli işler var",
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "title": "Olumsuz",
+      "sentiment": "negative",
+      "options": [
+        {
+          "index": 0,
+          "text": "Bu konu hakkında fazla konuşmak yerine, geleceğe odaklanmayı tercih ediyorum",
+          "enabled": true
+        },
+        {
+          "index": 1,
+          "text": "Üstünde konuşulacak bir şey olduğunu sanmıyorum açıkçası fakat, sayfalar dolusu bir yazı yazmaya çalışacak sözde analistlere şimdiden bol şans",
+          "enabled": true
+        }
+      ]
+    }
+  ],
+  "override_question_id": null,
+  "last_applied": null,
+  "match": null
+}
