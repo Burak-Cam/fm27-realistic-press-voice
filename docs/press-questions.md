@@ -85,6 +85,26 @@ maç sonu haberlerinden:
 - **Ülke farkları:** Türkiye ve İspanya'da hakem soruları çok sık; İtalya'da sorumluluk ve "teknik tercih" (bir
   oyuncunun neden oynamadığı); Almanya'da hakem sorusu çoğu zaman maçtan hemen sonra TV'ye verilen demece atıfla gelir.
 
+## Maç sonu flaş (saha kenarı TV) röportajı (2026-11-21 eki)
+- **Biçim:** düdükten hemen sonra 2-3 soru, birkaç dakikalık yayın süresi. Muhabirin sözü çoğu zaman gerçek bir soru
+  değil, düşen tonlamalı bir **değerlendirme cümlesidir** ("Birkaç penaltı itirazı vardı, bazıları haklıydı sanırım.");
+  amaç teknik direktörün ilk değerlendirmesini almaktır, uzman odur (Rhys 2016).
+- **İlk soru** açık uçlu ve konuşturucu; suçlayıcı ifade ("sorumluluktan kaçıyorsunuz") kullanılmaz, çünkü bu bir hükümdür,
+  olgu değil. Sert soru değil, iyi cevap getiren soru önemlidir (Sky/BBC muhabirleri, FourFourTwo).
+- **beIN SPORTS örneklerinde konu sırası** (Okan Buruk FB 1-3 GS, Mourinho FB-Samsunspor beraberlik, Besnik Hasi,
+  Şenol Güneş): sonuç ve genel değerlendirme -> kırılma anı (ilk yarı skoru, penaltı) -> tek tek oyuncular -> hakem ->
+  rakip/taraftar -> puan durumu ve fikstür -> teknik direktöre güven / baskı.
+
+## Maç sonu basın toplantısı akışı (2026-11-21 eki)
+- Arsenal-PSG elenmesi (9 soru): performans, soyunma odasındaki duygu, ön tarafta güç ihtiyacı, oyunculara ne söylendi,
+  kupa inancı, "daha iyi olan takım mı kaybetti?", bir üst seviyeye çıkamama korkusu, oyuncuların açlığı.
+- Arsenal-Palace galibiyeti (9 soru): turun anlamı, yenilen goller, kıl payı sonuçlar, yoğun fikstürde kadro, kıl payı
+  galibiyetlerin morale etkisi, sonra ÜÇ ayrı oyuncu sorusu (en sonda).
+- Süper Lig (Belözoğlu 2-2, Bjelica, Hasi): sonuç ve sorumluluk, hakem/penaltı/ofsayt, puan farkı ve şampiyonluk yarışı,
+  rakip hoca, kadro dışı oyuncu.
+- **Ortak akış:** ilk soru sonucun anlamı; ortada kırılma anı, taktik, hakem, soyunma odası; sona doğru tek oyuncular,
+  puan durumu/hedef, sonraki maç. (Türk haber siteleri soruları silip sadece cevapları yazıyor; akış cevap sırasından.)
+
 ## Akademik / sektör notları
 - Maç sonu röportajları iki tarafın da "yüz koruduğu" yarı kalıplı konuşmalardır (Heaney 2011); hakem soruları
   hocalar için ayrı bir müzakere sorunudur (Taylor & Francis bölümü).
@@ -116,3 +136,12 @@ maç sonu haberlerinden:
 - [Heaney (2011), maç sonu röportajları söylem analizi (Hermes)](https://tidsskrift.dk/her/article/download/97569/146731/200569)
 - [Basın toplantısında hakem soruları (Taylor & Francis)](https://www.taylorfrancis.com/books/9781315644974/chapters/10.4324/9781315644974-11)
 - ["Basit" soruların savunusu (Paste)](https://pastemagazine.com/soccer/in-defence-of-dumb-questions-at-managerial-press-c)
+- [Rhys (2016) üzerine: maç sonu röportajında değerlendirme cümleleri (ROLSI)](https://rolsi.net/2016/08/03/guest-blog-catrin-rhys-on-strange-interview-questions/)
+- [Maç sonu röportajını yapanlar anlatıyor (FourFourTwo)](https://www.fourfourtwo.com/features/post-match-interview-invaluable-insight-or-inane-exercise-fourfourtwo-hears-men-behind-mics)
+- [Okan Buruk, FB 1-3 GS sonrası beIN SPORTS](https://beinsports.com.tr/haber/okan-buruk-bizim-icin-rahat-bir-mac-oldu)
+- [Mourinho, Samsunspor beraberliği sonrası beIN SPORTS](https://beinsports.com.tr/haber/jose-mourinhodan-mac-sonrasi-flas-aciklama-sampiyonluk-sansimiz)
+- [Besnik Hasi, Trabzonspor galibiyeti sonrası beIN SPORTS](https://beinsports.com.tr/haber/besnik-hasi-hak-edilmis-bir-galibiyet-oldu)
+- [Şenol Güneş, Gaziantep beraberliği sonrası beIN SPORTS](https://beinsports.com.tr/haber/senol-gunesten-mac-sonu-aciklamasi-sorumlusu-benim)
+- [Arteta, PSG elenmesi sonrası basın toplantısı](https://www.arsenal.com/news/every-word-artetas-post-psg-presser)
+- [Arteta, Palace galibiyeti sonrası basın toplantısı](https://www.arsenal.com/news/every-word-artetas-post-palace-presser-0)
+- [Emre Belözoğlu, Kocaelispor 2-2 sonrası (Özgün Kocaeli)](https://www.ozgunkocaeli.com.tr/emre-belozoglu-bugunun-kaybedeni-biz-olduk)

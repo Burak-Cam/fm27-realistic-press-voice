@@ -33,7 +33,8 @@ derlemek için isteğe bağlı .NET SDK 8/9.
 
 ## Anahtarlar (ücretsiz)
 - **Gemini** (zorunlu): https://aistudio.google.com/apikey
-- **Groq** (önerilir; sorular ~0,5 sn'de gelir, Gemini yoğun saatlerde yavaşlar): https://console.groq.com/keys
+- **Groq** (önerilir): https://console.groq.com/keys. Sorular Gemini ile üretilir; Gemini 2,5 sn içinde cevap
+  vermezse Groq'a da sorulur ve önce gelen kullanılır (Gemini yoğun saatlerde yavaşlayabilir).
 
 Kurulum betiği sorar; elle eklemek için `setx GEMINI_API_KEY "..."` ve `setx GROQ_API_KEY "..."`, sonra yeni pencere.
 Anahtarlar sadece Windows kullanıcı ortam değişkeninde durur; hiçbir dosyaya yazılmaz.
@@ -61,12 +62,14 @@ yalnızca bu API ile sınırlı bir anahtar oluştur: `setx GOOGLE_TTS_API_KEY "
 
 ## Gizlilik ve disk
 - Ekran görüntüsü alınmaz; yapay zekâya sadece metin (soru, seçenekler, maç özeti, cevabının yazısı) gider.
-- Sesin bilgisayarında yazıya dökülür. Anahtarlar sadece ortam değişkeninde.
+- Sesli cevabın: Groq anahtarı varsa yazıya dökülmesi için Groq'a gönderilir (Whisper; Türkçede çok daha doğru ve
+  hızlı). İstemezsen `app\settings.ini` içinde `konusma_tanima = yerel` yap: ses bilgisayarından çıkmaz (daha az doğru).
+  Groq'a ulaşılamazsa otomatik olarak bilgisayardaki modele geçilir. Anahtarlar sadece ortam değişkeninde.
 - Otomatik temizlik: son 30 maç, 50 toplantı ve 15 uygulama kaydı tutulur; eski geçici dosyalar silinir.
 
 ## Sorun giderme
 - **Gösterge "uygulama kapalı" diyor:** kısayolla uygulamayı başlat (pencere açık kalmalı).
-- **Soru oyunun kendi sorusu kaldı:** yapay zekâ cevap vermedi (Groq anahtarı ekle; `start.bat check`).
+- **Soru oyunun kendi sorusu kaldı:** yapay zekâ süre sınırında cevap vermedi (Groq anahtarı ekle; `start.bat check`).
 - **F8 çalışmıyor / başka tuş:** `settings.ini` → `bas_konus_tusu`.
 - **Yanlış mikrofon:** `start.bat devices`, sonra `settings.ini` → `mikrofon`.
 - **Log:** `BepInEx\LogOutput.log` (eklenti), `app\logs\live_*.log` (uygulama).

@@ -5,7 +5,17 @@
 param([switch]$InstallShortcut)
 
 $ErrorActionPreference = "Stop"
-$GameDir  = if ($env:FM_GAME_DIR) { $env:FM_GAME_DIR } else { "C:\Program Files (x86)\Steam\steamapps\common\Football Manager 27" }
+# Oyun klasörü: FM_GAME_DIR > app\settings.ini (oyun_klasoru, install.ps1 -GameDir yazar) > Steam varsayılanı
+function Get-GameDir {
+    if ($env:FM_GAME_DIR) { return $env:FM_GAME_DIR }
+    $ini = Join-Path $PSScriptRoot "app\settings.ini"
+    if (Test-Path $ini) {
+        $line = Get-Content -Encoding UTF8 $ini | Where-Object { $_ -match '^\s*oyun_klasoru\s*=\s*\S' } | Select-Object -First 1
+        if ($line) { return ($line -replace '^\s*oyun_klasoru\s*=\s*', '').Trim() }
+    }
+    return "C:\Program Files (x86)\Steam\steamapps\common\Football Manager 27"
+}
+$GameDir  = Get-GameDir
 $Doorstop = Join-Path $GameDir "doorstop_config.ini"
 $AppDir   = Join-Path $PSScriptRoot "app"
 $Title    = "FM27 Basın Modu"
