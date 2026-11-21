@@ -28,31 +28,45 @@ internal static class MatchRecorder
     static float _nextFind, _nextRead, _nextSnap, _lastSeen;
     static string _file, _lastComment, _lastScore, _lastTime, _teams;
     static int _lastMinute = -1;
-    static bool _sawFullTime, _ftCaptured, _htCaptured, _htScreenCaptured;
-    static float _lastTimeChange, _pendingFt = -1f;
+    static bool _sawFullTime, _ftCaptured, _htCaptured, _wasVisible;
+    static float _lastTimeChange;
     static string _lastFile;
     static readonly HashSet<string> SkipPanels = new() { "GameWorldBackground", "Watermark", "GameVersion" };
+
+    // DÜDÜK İZLEME (v0.4.2): devre arası / maç sonu istatistik ekranı (gol, asist, dakika, penaltı, kart, şut, topla
+    // oynama...) bu yöntemin en önemli verisi. v0.4.1 kaçırdı: düdükte saat geri döner (47:59->45:00, 95:17->90:00) ve
+    // maç paneli hemen kapanır; "saat 5 sn dursun" tetiği hiç çalışmadı, geç alınan kayıtta takım konuşması/Portal vardı.
+    // Şimdi düdük belirtisi görülünce 150 sn izleme penceresi açılır. Panel kontrolü 0,2 sn'de bir (ekranda 2 sn bile
+    // kalmayan kullanıcıyı kaçırmamak için); görünen panel kümesi değişince hemen, sonra +0,4 / +1 / +2 sn'de tekrar
+    // çekilir (animasyonla geç dolan içerik). İçerik bir öncekiyle aynıysa dosyaya yazılmaz. Panel adını bilmeye gerek yok.
+    const float WatchSec = 150f, WatchCheckSec = 0.2f;
+    const int WatchMaxCaptures = 40;
+    static readonly float[] RecaptureDelays = { 0.4f, 1f, 2f };
+    static float _watchUntil, _nextWatch, _changeAt;
+    static int _recaptureIdx;
+    static string _watchTag, _lastPanelSig;
+    static int _watchCount, _watchChecks, _lastCaptureHash;
+    static double _watchTicks, _watchMaxMs;
 
     public static void Tick(VisualElement root)
     {
         if (!Plugin.MatchEnabled.Value || root == null) return;
         float now = Time.unscaledTime;
+        if (now < _watchUntil && now >= _nextWatch)
+        {
+            _nextWatch = now + WatchCheckSec;
+            WatchTick(root, now);
+        }
         if (now < _nextRead) return;
         _nextRead = now + 0.5f;
-
-        if (_pendingFt > 0f && now >= _pendingFt)
-        {
-            _pendingFt = -1f;
-            CaptureAll(root, "mac_sonu_ekrani");          // maç ekranından çıkınca açılan maç sonu ekranı
-        }
 
         if (!Visible(_proto))
         {
             _proto = null;
-            if (_file != null && now - _lastSeen > 3f && _lastMinute >= 44 && _lastMinute <= 50 && !_htScreenCaptured)
+            if (_wasVisible && _file != null)               // maç paneli az önce kapandı
             {
-                _htScreenCaptured = true;                   // devre arasında maç ekranından çıkıldı (takım konuşması vb.)
-                CaptureAll(root, "devre_arasi_ekrani");
+                _wasVisible = false;
+                StartWatch(PhaseFor(_lastMinute), now);
             }
             // kayıt sadece maç sonunda biter; devre arasında ekrandan çıkmak maçı bölmez (uzun süre kapalıysa biter)
             if (_file != null && ((now - _lastSeen > 8f && _lastMinute >= 85) || now - _lastSeen > 600f))
@@ -64,6 +78,7 @@ internal static class MatchRecorder
             CacheRefs();
         }
         _lastSeen = now;
+        _wasVisible = true;
 
         string time = Ui.Clean(Ui.GetText(_time)), score = Ui.Clean(Ui.GetText(_score));
         string comment = Ui.Clean(Ui.GetText(_commentary));
@@ -76,6 +91,9 @@ internal static class MatchRecorder
             if (_file != null) End("yeni maç");
             Start(teams);
         }
+        // düdük: saat uzatmadan normal süreye geri döndü (47:59 -> 45:00, 95:17 -> 90:00)
+        if (minute >= 0 && _lastMinute >= 45 && minute < _lastMinute && minute + 15 >= _lastMinute)
+            StartWatch(PhaseFor(_lastMinute), now);
         if (minute >= 0) _lastMinute = minute;
 
         if (score != _lastScore && !string.IsNullOrEmpty(score))
@@ -89,15 +107,15 @@ internal static class MatchRecorder
             _lastComment = comment;
         }
         if (time != _lastTime) _lastTimeChange = now;
-        if (minute >= 90 && !_ftCaptured && now - _lastTimeChange > 5f)
+        if (minute >= 90 && !_ftCaptured && now - _lastTimeChange > 3f)
         {
-            _ftCaptured = true;                             // süre durdu: maç bitti, ekrandaki son hali tam kaydet
-            CaptureAll(root, "dudukte_mac_ekrani");
+            _ftCaptured = true;                             // süre durdu: maç bitti olabilir
+            StartWatch("mac_sonu", now);
         }
-        if (minute >= 45 && minute <= 50 && !_htCaptured && now - _lastTimeChange > 5f)
+        if (minute >= 45 && minute <= 50 && !_htCaptured && now - _lastTimeChange > 3f)
         {
-            _htCaptured = true;                             // ilk yarı bitti: devre arası istatistikleri
-            CaptureAll(root, "devre_arasi_mac_ekrani");
+            _htCaptured = true;                             // ilk yarı bitmiş olabilir
+            StartWatch("devre_arasi", now);
         }
         bool fullTime = minute >= 90;
         if (now >= _nextSnap || (fullTime && !_sawFullTime))
@@ -110,6 +128,67 @@ internal static class MatchRecorder
     }
 
     static bool Visible(VisualElement ve) => ve != null && Ui.Attached(ve) && Ui.HasClass(ve, "panel--visible");
+
+    static string PhaseFor(int minute) => minute >= 85 ? "mac_sonu" : minute >= 44 && minute <= 60 ? "devre_arasi" : null;
+
+    static void StartWatch(string tag, float now)
+    {
+        if (tag == null) return;
+        if (tag == _watchTag && now < _watchUntil) return;      // aynı aşama zaten izleniyor
+        _watchTag = tag;
+        _watchUntil = now + WatchSec;
+        _lastPanelSig = null;
+        _recaptureIdx = RecaptureDelays.Length;
+        _nextWatch = 0f;
+        _watchCount = _watchChecks = _lastCaptureHash = 0;
+        _watchTicks = _watchMaxMs = 0;
+        Plugin.Instance.Log.LogInfo($"[maç] düdük izleme başladı: {tag} (dakika {_lastMinute})");
+    }
+
+    /// İzleme penceresinde: görünen panel adları değiştiyse ya da son değişimin tekrar çekim zamanı geldiyse kaydet.
+    static void WatchTick(VisualElement root, float now)
+    {
+        if (now + WatchCheckSec >= _watchUntil)              // pencere bitiyor: maliyeti raporla (genel kullanıcılar için ölçü)
+        {
+            Plugin.Instance.Log.LogInfo($"[maç] düdük izleme bitti: {_watchTag}, {_watchCount} çekim, panel kontrolü " +
+                                        $"{_watchChecks} kez, ort. {(_watchChecks > 0 ? _watchTicks / _watchChecks : 0):F2} ms, en fazla {_watchMaxMs:F2} ms");
+            _watchUntil = 0f;
+            return;
+        }
+        if (_watchCount >= WatchMaxCaptures) return;
+        var sw = Stopwatch.StartNew();
+        var names = new List<string>();
+        VisiblePanels(root, 0, names);
+        double ms = sw.Elapsed.TotalMilliseconds;
+        _watchChecks++; _watchTicks += ms; if (ms > _watchMaxMs) _watchMaxMs = ms;
+        string sig = string.Join(",", names);
+        bool changed = sig != _lastPanelSig;
+        bool recapture = !changed && _recaptureIdx < RecaptureDelays.Length && now - _changeAt >= RecaptureDelays[_recaptureIdx];
+        if (!changed && !recapture) return;
+        if (changed) { _lastPanelSig = sig; _changeAt = now; _recaptureIdx = 0; }
+        else _recaptureIdx++;
+        if (CaptureAll(root, $"{_watchTag}_ekrani_{_watchCount + 1}", skipIfSame: true)) _watchCount++;
+    }
+
+    static void VisiblePanels(VisualElement ve, int depth, List<string> names)
+    {
+        if (ve == null || depth > 6) return;
+        int count;
+        try { count = ve.childCount; } catch { return; }
+        for (int i = 0; i < count; i++)
+        {
+            VisualElement c;
+            try { c = ve[i]; } catch { continue; }
+            if (c == null) continue;
+            if (Ui.HasClass(c, "panel") && Ui.HasClass(c, "panel--visible"))
+            {
+                string name;
+                try { name = c.name ?? ""; } catch { name = ""; }
+                if (!SkipPanels.Contains(name)) names.Add(name);
+            }
+            else VisiblePanels(c, depth + 1, names);
+        }
+    }
 
     /// Kökün ilk 3 seviyesinde maç panellerini ara (basın paneli aramasıyla aynı maliyet).
     static void FindPanels(VisualElement root)
@@ -177,13 +256,14 @@ internal static class MatchRecorder
     }
 
     /// Görünen tüm panellerin metinlerini bir kez kaydet (maç sonu ekranı: golcüler, istatistikler). Tek seferlik maliyet.
-    static void CaptureAll(VisualElement root, string where)
+    /// skipIfSame: içerik son çekimle aynıysa yazma. Yazıldıysa true.
+    static bool CaptureAll(VisualElement root, string where, bool skipIfSame = false)
     {
         var sw = Stopwatch.StartNew();
         var panels = new Dictionary<string, List<string[]>>();
         void Walk(VisualElement ve, int depth)
         {
-            if (ve == null || depth > 3) return;
+            if (ve == null || depth > 6) return;
             int count;
             try { count = ve.childCount; } catch { return; }
             for (int i = 0; i < count; i++)
@@ -209,11 +289,16 @@ internal static class MatchRecorder
         }
         Walk(root, 0);
         var target = _file ?? _lastFile;
-        if (target == null) return;
+        if (target == null || panels.Count == 0) return false;
+        var body = JsonSerializer.Serialize(panels, Json);
+        int hash = body.GetHashCode();
+        if (skipIfSame && hash == _lastCaptureHash) return false;
+        _lastCaptureHash = hash;
         var line = JsonSerializer.Serialize(new Dictionary<string, object> { ["type"] = "screen", ["where"] = where,
                                                                              ["panels"] = panels }, Json);
-        try { File.AppendAllText(target, line + "\n"); } catch { }
+        try { File.AppendAllText(target, line + "\n"); } catch { return false; }
         Plugin.Instance.Log.LogInfo($"[maç] {where} kaydedildi: {panels.Count} panel, {sw.ElapsedMilliseconds} ms");
+        return true;
     }
 
     static void Start(string teams)
@@ -221,7 +306,8 @@ internal static class MatchRecorder
         _teams = teams;
         _lastComment = _lastScore = _lastTime = null;
         _lastMinute = -1;
-        _sawFullTime = _ftCaptured = _htCaptured = _htScreenCaptured = false;
+        _sawFullTime = _ftCaptured = _htCaptured = false;
+        _watchUntil = 0f; _watchTag = null;
         _nextSnap = 0;
         Directory.CreateDirectory(Dir);
         string safe = string.Concat(teams.Split(Path.GetInvalidFileNameChars()));
@@ -235,9 +321,9 @@ internal static class MatchRecorder
         Append(new Dictionary<string, object> { ["type"] = "end", ["why"] = why, ["t"] = _lastTime, ["s"] = _lastScore,
                                                 ["time"] = DateTime.Now.ToString("s") });
         Plugin.Instance.Log.LogInfo($"[maç] kayıt bitti ({why}): {Path.GetFileName(_file)}");
-        _lastFile = _file;
-        if (why == "maç ekranı kapandı" && _lastMinute >= 85) _pendingFt = Time.unscaledTime + 3f;
+        _lastFile = _file;                                  // izleme penceresi kayda _lastFile üzerinden devam eder
         _file = null;
+        _wasVisible = false;
         _commentary = _time = _score = _home = _away = _mentality = null;
     }
 

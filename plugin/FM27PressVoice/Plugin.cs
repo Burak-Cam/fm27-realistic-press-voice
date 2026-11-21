@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace FM27PressVoice;
 
-[BepInPlugin("fm27pressvoice", "FM27 Press Voice", "0.4.1")]
+[BepInPlugin("fm27pressvoice", "FM27 Press Voice", "0.4.2")]
 public class Plugin : BasePlugin
 {
     internal static Plugin Instance;
