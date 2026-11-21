@@ -36,6 +36,8 @@ class PressSession:
                  follow_up_prob: float | None = None, log_dir: str | None = None, max_questions: int | None = None):
         self.io, self.speak, self.listen = io, speak, listen
         self.match = match
+        self.manager_team: str | None = None   # röportajdaki rakip adından öğrenilir; basın toplantısında rakip gelmiyor
+        self.meeting_kind: str | None = None   # basın toplantısı "pre"/"post" (oyunun sorusundan; toplantı başında sıfırlanır)
         self.follow_up_prob = C.FOLLOW_UP_PROB if follow_up_prob is None else follow_up_prob
         self.history: list[dict] = []
         self.handled: set[str] = set()
@@ -61,6 +63,7 @@ class PressSession:
             active = bool(st and st.get("active"))
             if active and not was_active:
                 self.seen, self.closed = 0, False
+                self.meeting_kind = None
                 self.fu_asked = set()
                 self.introduced = set()
                 self.voicebook.new_conference()
@@ -167,18 +170,37 @@ class PressSession:
 
     @staticmethod
     def _name_hint(st: dict, question: str, match: dict | None) -> str:
-        """Whisper ipucu: rakip, organizasyon, gazeteci ve soru/maç verisindeki özel isimler (tekrarsız)."""
-        import json as _json
+        """Whisper ipucu: takımlar, oyuncular, gazeteci ve sorudaki özel isimler (tekrarsız). Maç verisinin tamamı
+        taranmaz: hazır cümlelerdeki büyük harfli kelimeler ("Rakip", "Maç", "Lider") ipucunu doldurup oyuncu
+        adlarını dışarıda bırakıyordu (2026-11-21 ölçümü: WER %27,8 -> %19,3)."""
         import re as _re
-        src = " ".join(filter(None, [st.get("opponent"), st.get("competition"), (st.get("journalist") or {}).get("name"),
-                                     question, _json.dumps(match, ensure_ascii=False) if match else ""]))
-        words, seen = [], set()
-        for w in _re.findall(r"[A-ZÇĞİÖŞÜ][\wçğıöşüéáíóãñ'.-]{2,}", src):
-            w = w.strip(".'")
-            if w.lower() not in seen and w not in ("Hocam", "GOL", "FB", "GS"):
-                seen.add(w.lower())
-                words.append(w)
-        return ", ".join(words[:30])
+        if match and len(match) == 1 and str(next(iter(match))).startswith("GECEN_MAC"):
+            match = next(iter(match.values()))                     # maç öncesi: geçen maçın özeti iç içe
+        match = match or {}
+        names: list[str] = []
+        add = lambda *xs: names.extend(x.strip() for x in xs if x and x.strip())
+        teams = [t.split(" (")[0] for t in (match.get("takimlar") or "").split(" - ") if " (" in t]
+        add(*teams, st.get("opponent"), (st.get("journalist") or {}).get("name"))
+        for line in match.get("ayni_anda_oynanan_maclar", []):    # "Çaykur Rizespor 1 - 2 Samsunspor"
+            add(*_re.split(r"\s+\d+ - \d+\s+", line))
+        for m in _re.finditer(r"(?:Lider|takipçi) (.+?) \d+ puan", match.get("puan_durumu") or ""):
+            add(m.group(1))
+        add(*match.get("teknik_direktorun_ilk_11", []))
+        player = r"([A-ZÇĞİÖŞÜ][\wçğıöşüéáíóãñ'.-]+(?: [A-ZÇĞİÖŞÜ][\wçğıöşüéáíóãñ'.-]+)?) \([A-Z]{2,4}\)"
+        for text in (match.get("onemli_anlar", []) + match.get("rakip_tartismali_anlar", [])
+                     + match.get("en_iyi_reytingler", []) + match.get("en_dusuk_reytingler", [])):
+            add(*_re.findall(player, text))
+        add(st.get("competition"))
+        for w in _re.findall(r"[A-ZÇĞİÖŞÜ][\wçğıöşüéáíóãñ.-]{2,}", question or ""):
+            if w not in ("Hocam", "GOL", "VAR"):
+                add(w)
+        out, seen = [], set()
+        for n in names:
+            k = n.casefold()
+            if k not in seen:
+                seen.add(k)
+                out.append(n)
+        return ", ".join(out[:40])
 
     def _current_qid(self):
         st = self.io.read_state() or {}
@@ -233,15 +255,32 @@ class PressSession:
         print(f"  Oyunun sorusu: {st.get('game_question')}")
 
         match = st.get("match") or self.match
-        if match is None and st.get("screen") == "tunnel_interview":   # maç öncesi: bu maç oynanmadı, geçen maç
-            prev = match_log.previous_summary()
+        if st.get("screen") == "press_conference" and not st.get("event_hint"):
+            # panel maç öncesi/sonu ayırmıyor: oyunun sorusundan karar ver, toplantı boyunca hatırla
+            if self.meeting_kind is None:
+                self.meeting_kind = press.meeting_kind(st.get("game_question"))
+                if self.meeting_kind:
+                    print(f"  [toplantı] tür: {'maç öncesi' if self.meeting_kind == 'pre' else 'maç sonu'}")
+            if self.meeting_kind == "pre":
+                st = dict(st, event_hint="pre_match")
+        # maç öncesi: saha kenarı röportajı ya da oyunun sorusundan maç öncesi olduğu anlaşılan basın toplantısı
+        pre_match = st.get("screen") == "tunnel_interview" or (st.get("screen") == "press_conference"
+                                                               and st.get("event_hint") == "pre_match")
+        if match is None and pre_match:                                # maç öncesi: bu maç oynanmadı, geçen maç
+            prev = match_log.previous_summary(opponent=st.get("opponent"))
             if prev:
+                prev = match_log.mark_manager_team(prev, None, my_team=self.manager_team)
                 match = {"GECEN_MAC (bugünkü maç DEĞİL, geçen maç)": prev}
                 print(f"  [maç] geçen maç: {prev.get('takimlar')} {prev.get('skor', '')}")
+            else:
+                print("  [maç] geçen maç yok (ya da aynı rakibe karşı tekrar oynanan kaydedilmemiş maç)")
         elif match is None:
             match = match_log.recent_summary()
             if match:
-                match = match_log.mark_manager_team(match, st.get("opponent"))
+                match = match_log.mark_manager_team(match, st.get("opponent"), my_team=None if st.get("opponent")
+                                                    else self.manager_team)
+                if match.get("teknik_direktorun_takimi"):
+                    self.manager_team = match["teknik_direktorun_takimi"].split(" (")[0]
                 print(f"  [maç] özet: {match.get('takimlar')} {match.get('skor', '')}, "
                       f"{len(match.get('onemli_anlar', []))} an, {len(match.get('goller', []))} gol")
         status.set("generating")

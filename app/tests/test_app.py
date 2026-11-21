@@ -572,7 +572,7 @@ def test_match_summary():
     import match
     s = match.summarize(_match_rows())
     assert s["skor"] == "1 - 0"
-    assert s["goller"][0]["dakika"] == "6" and s["goller"][0]["golcu"] == "Muriqi (FB)"
+    assert s["goller"][0]["dakika"] == "7" and s["goller"][0]["golcu"] == "Muriqi (FB)"
     assert s["takimlar"] == "Fenerbahçe (FB) - Galatasaray (GS)"
     assert match.mark_manager_team(dict(s), "Fenerbahçe")["teknik_direktorun_takimi"] == "Galatasaray (GS)"
     assert any("direkten" in m for m in s["onemli_anlar"]) and any("oyuna giriyor" in m for m in s["onemli_anlar"])
@@ -590,12 +590,13 @@ def test_match_summary_used_after_match(tmp_path, monkeypatch):
     prompts = []
     llm.set_mock(lambda p, t: prompts.append(p) or ({"question": "S", "event": "post_match"} if t == "question" else
                  {"category_index": 0, "option_index": 0, "display_text": "D", "follow_up": None}))
-    st = dict(load_states()[0], active=True, ready=True, screen="post_match_tunnel_interview", match=None)
+    st = dict(load_states()[0], active=True, ready=True, screen="post_match_tunnel_interview", match=None,
+              event_hint="post_match")                                 # eklenti panelle birlikte gönderir
     s = PressSession(_FakeIO(st), lambda *a, **k: None, lambda abort: "cevap", follow_up_prob=0,
                      log_dir=str(tmp_path / "logs"))
     s.handle(st)
-    assert "direkten" in prompts[0] and "2,77" in prompts[0]
-    st2 = dict(st, screen="tunnel_interview", question_id="x2")                 # maç öncesi: GEÇEN maç olarak
+    assert "direkten" in prompts[0] and "Rakip sizden fazla şut çekti (rakip 12, siz 5)" in prompts[0] and "2,77" not in prompts[0]
+    st2 = dict(st, screen="tunnel_interview", question_id="x2", opponent="Trabzonspor", event_hint="pre_match")  # maç öncesi: GEÇEN maç
     prompts.clear()
     s2 = PressSession(_FakeIO(st2), lambda *a, **k: None, lambda abort: "cevap", follow_up_prob=0,
                       log_dir=str(tmp_path / "logs2"))
@@ -617,8 +618,265 @@ def test_goals_from_commentary_without_scorer():
             {"type": "end", "t": "90:01", "s": "1 - 1"}]
     g = match.summarize(rows)["goller"]
     assert [(x["dakika"], x["takim"], x["golcu"]) for x in g] == [
-        ("2", "Galatasaray", "bilinmiyor (tahmin etme)"), ("70", "Fenerbahçe", "bilinmiyor (tahmin etme)")]
+        ("3", "Galatasaray", "bilinmiyor (tahmin etme)"), ("71", "Fenerbahçe", "bilinmiyor (tahmin etme)")]
     assert not any("Sallai" in str(x) for x in g)
+
+
+def _derby_rows():
+    """Gerçek kayıttan (2026-11-21, FB 2-1 GS): tabela 19' Muriqi, 34' Osimhen, 77' Mert Müldür."""
+    return [{"type": "start", "teams": "FB-GS"},
+            {"type": "c", "t": "18:30", "s": "", "x": "GOL Fenerbahçe A.Ş.!!"},
+            {"type": "c", "t": "33:09", "s": "", "x": "GOL Galatasaray A.Ş.!!"},
+            {"type": "c", "t": "34:30", "s": "", "x": "Ama Asensio topu direğin hemen üstünden dışarı attı!"},
+            {"type": "c", "t": "40:10", "s": "", "x": "Osimhen'in şutu direkten dönüyor!"},
+            {"type": "c", "t": "46:02", "s": "", "x": "Leão, Semedo'dan kaçtı"},
+            {"type": "c", "t": "60:00", "s": "", "x": "Hakem penaltı noktasını gösterdi! Asensio yerde kaldı"},
+            {"type": "c", "t": "76:40", "s": "", "x": "GOL Fenerbahçe A.Ş.!!"},
+            {"type": "snap", "t": "90:00", "items": [
+                ["ClubHomeTeamText", "FB"], ["ClubAwayTeamText", "GS"],
+                ["FormationView", "GS Diziliş (TS)"], ["Name", "Osimhen"], ["Name", "Rafa Leão"],
+                ["FormationView", "FB Diziliş (TS)"], ["Name", "Asensio"], ["Name", "Semedo"],
+                ["primary-text", "FENERBAHÇE"], ["", "Şut"], ["", "11"],
+                ["primary-text", "GALATASARAY"], ["", "Şut"], ["", "9"]]},
+            {"type": "end", "t": "90:00", "s": "2 - 1"}]
+
+
+def test_goal_minutes_match_scoreboard():
+    """Anlatım saati 18:30 -> tabelada 19'. Soru tabeladaki dakikayı kullanmalı."""
+    import match
+    g = match.summarize(_derby_rows())["goller"]
+    assert [x["dakika"] for x in g] == ["19", "34", "77"]
+
+
+def test_manager_perspective_goals_and_moments():
+    """Rakibin golü teknik direktöre mal edilmesin; rakibin sıradan pozisyonu sorulmasın, tartışmalı olanı kalsın."""
+    import match
+    s = match.mark_manager_team(match.summarize(_derby_rows()), None, my_team="Galatasaray")
+    assert s["teknik_direktorun_takimi"] == "Galatasaray (GS)"
+    kim = [(g["dakika"], g["kimin_golu"]) for g in s["goller"]]
+    assert kim[0][0] == "19" and "RAKİP" in kim[0][1]
+    assert kim[1][0] == "34" and "RAKİP" not in kim[1][1]
+    anlar = " ".join(s["onemli_anlar"])
+    assert "Osimhen" in anlar and "Leão" in anlar          # kendi takımının pozisyonları
+    assert "Asensio" not in anlar                          # rakibin sıradan kaçan fırsatı yok
+    assert "GOL" not in anlar                              # goller ayrı listede, tekrar yok (yanlış sahiplenme)
+    assert any("penaltı" in m for m in s["rakip_tartismali_anlar"])
+    assert s["sonuc_teknik_direktor_icin"] == "MAĞLUBİYET: Galatasaray 1 - 2 Fenerbahçe"
+    assert [g["bu_golden_sonra"] for g in s["goller"]] == [         # LLM ara skoru kendi hesaplayıp "farkı ikiye çıkardı" diyordu
+        "Galatasaray 0 - 1 Fenerbahçe", "Galatasaray 1 - 1 Fenerbahçe", "Galatasaray 1 - 2 Fenerbahçe"]
+    assert "Rakip sizden fazla şut çekti (rakip 11, siz 9)" in s["istatistik_cumleleri"] and "xG" not in s
+    assert s["teknik_direktorun_takimi_sahasi"] == "deplasman"
+    # rakip adıyla da aynı sonuç
+    s2 = match.mark_manager_team(match.summarize(_derby_rows()), "Fenerbahçe")
+    assert s2["teknik_direktorun_takimi"] == "Galatasaray (GS)" and "RAKİP" in s2["goller"][0]["kimin_golu"]
+
+
+def test_screen_text_drops_noise_panels():
+    """Maç sonu ekran kaydındaki portal/röportaj panelleri LLM'e gitmesin (röportaj seçeneğinden 'özür' uyduruyordu)."""
+    import match
+    rows = _derby_rows() + [{"type": "screen", "where": "mac_sonu_ekrani", "panels": {
+        "PortalScreen": [["", "Mevcut Bütçe"], ["", "€6,28M"]],
+        "PostMatchTunnelInterviewPanel": [["text", "Taraftarlarımızdan özür diliyorum"]],
+        "MatchStatsPanel": [["", "Muriqi 19'"], ["", "Osimhen 34'"]]}}]
+    t = match.summarize(rows)["mac_sonu_ekrani_metni"]
+    assert "Muriqi" in t and "Bütçe" not in t and "özür" not in t
+    multi = _derby_rows() + [                                   # v0.4.2: düdük sonrası birden çok çekim birleşir
+        {"type": "screen", "where": "mac_sonu_ekrani_1", "panels": {"OverviewPrototype": [["", "V. Muriqi 19'"]]}},
+        {"type": "screen", "where": "mac_sonu_ekrani_2", "panels": {"MatchStatsPanel": [["", "Topla Oynama"]],
+                                                                    "PostMatchTunnelInterviewPanel": [["", "özür"]]}}]
+    t2 = match.summarize(multi)["mac_sonu_ekrani_metni"]
+    assert "Muriqi 19'" in t2 and "Topla Oynama" in t2 and "özür" not in t2
+    only_noise = _derby_rows() + [{"type": "screen", "where": "mac_sonu_ekrani",
+                                   "panels": {"PortalScreen": [["", "Mevcut Bütçe"]]}}]
+    assert "mac_sonu_ekrani_metni" not in match.summarize(only_noise)
+
+
+def test_manager_team_from_squad_list_without_opponent():
+    """Rakip adı da öğrenilmiş takım da yoksa: maç ekranındaki 'Kadro' listesi teknik direktörün kendi kadrosudur."""
+    import match
+    rows = _derby_rows()
+    rows.insert(1, {"type": "snap", "t": "00:04", "items": [
+        ["text", "Kadro"], ["text", "5/5 Yedek"], ["text", "KL"],
+        ["fm-tactics-shirt-number", "45"], ["text", "Osimhen"], ["text", "6,6"], ["text", "Normal"],
+        ["fm-tactics-shirt-number", "27"], ["text", "Rafa Leão"], ["text", "6,6"]]})
+    s = match.mark_manager_team(match.summarize(rows), None)
+    assert s["teknik_direktorun_takimi"] == "Galatasaray (GS)"
+    assert "RAKİP" in s["goller"][0]["kimin_golu"]
+    assert not any(k.startswith("_") for k in s)
+    # LLM ilk 11'i bilmeyince "Yunus bugün sahada yoktu" diye uyduruyordu
+    assert s["teknik_direktorun_ilk_11"] == ["Osimhen", "Rafa Leão"]
+    assert "oyundan_alinanlar" not in s                    # ikisi de son dizilişte var
+
+
+def test_substituted_starters_listed():
+    import match
+    rows = [{"type": "start", "teams": "FB-GS"},
+            {"type": "snap", "t": "00:04", "items": [["text", "Kadro"],
+                ["fm-tactics-shirt-number", "11"], ["text", "Yunus"], ["fm-tactics-shirt-number", "45"], ["text", "Osimhen"],
+                ["fm-tactics-shirt-number", "4"], ["text", "Jakobs"]]},
+            {"type": "snap", "t": "90:00", "items": [["ClubHomeTeamText", "FB"], ["ClubAwayTeamText", "GS"],
+                ["FormationView", "GS Diziliş (TS)"], ["Name", "Osimhen"], ["Name", "Barış Alper"], ["Name", "Eren Elmalı"],
+                ["FormationView", "FB Diziliş (TS)"], ["Name", "Asensio"], ["Name", "Kanté"],
+                ["primary-text", "FENERBAHÇE"], ["primary-text", "GALATASARAY"]]},
+            {"type": "end", "t": "90:00", "s": "1 - 0"}]
+    s = match.mark_manager_team(match.summarize(rows), "Fenerbahçe")
+    assert s["teknik_direktorun_ilk_11"] == ["Yunus", "Osimhen", "Jakobs"]
+    assert s["oyundan_alinanlar"] == ["Yunus", "Jakobs"]
+    assert not any(k.startswith("_") for k in s)
+
+
+def test_game_stat_numbers_rewritten():
+    """Gerçek muhabir FM reytingi / xG söylemez: böyle bir soru bir kez yeniden yazdırılır."""
+    assert press.cites_game_stats("Sallai 6,2 reytingle oynadı. Neden oyunda tuttunuz?")
+    assert press.cites_game_stats("xG üstünlüğüne rağmen kaybettiniz.")
+    assert not press.cites_game_stats("77. dakikada yediğiniz golle 1-2 kaybettiniz. Ne diyorsunuz?")
+    assert not press.cites_game_stats("Kulüp 2,5 milyon euroluk teklifi reddetti. Oyuncu kalacak mı?")
+    answers = iter([{"question": "Sallai 6,2 puanla en düşük notu aldı. Neden oyunda tuttunuz?", "event": "post_match"},
+                    {"question": "Sallai bugün etkisizdi. Onu neden oyunda tuttunuz?", "event": "post_match"}])
+    llm.set_mock(lambda p, t: next(answers))
+    r = press.generate_question({"game_question": "Sallai neden oyundaydı?", "screen": "press_conference"}, None, [])
+    assert r["question"] == "Sallai bugün etkisizdi. Onu neden oyunda tuttunuz?"
+
+
+def test_provider_hedge(monkeypatch):
+    """Ana sağlayıcı (Gemini) yavaşsa LLM_HEDGE_SEC sonra ikinciye (Groq) de sorulur, ilk gelen kullanılır;
+    ana sağlayıcı hızlıysa ikinci hiç çağrılmaz."""
+    calls = []
+    def slow_gemini(p, d):
+        calls.append("gemini"); time.sleep(1.5); return '{"question": "G"}'
+    def fast_groq(p, d):
+        calls.append("openai"); return '{"question": "Q"}'
+    monkeypatch.setattr(C, "PROVIDERS", ["gemini", "openai"])
+    monkeypatch.setattr(C, "LLM_HEDGE_SEC", 0.3)
+    monkeypatch.setattr(llm, "_gemini", slow_gemini)
+    monkeypatch.setattr(llm, "_openai", fast_groq)
+    t = time.time()
+    assert llm.ask("p", budget=5)["question"] == "Q" and time.time() - t < 1.2
+    calls.clear()
+    monkeypatch.setattr(llm, "_gemini", lambda p, d: calls.append("gemini") or '{"question": "G"}')
+    assert llm.ask("p", budget=5)["question"] == "G" and calls == ["gemini"]
+    calls.clear()                                                     # ana sağlayıcı hata verirse hemen ikinci
+    def bad(p, d):
+        calls.append("gemini"); raise llm.LLMError("503")
+    monkeypatch.setattr(llm, "_gemini", bad)
+    t = time.time()
+    assert llm.ask("p", budget=5)["question"] == "Q" and time.time() - t < 0.3
+
+
+def _table_items(rows_):
+    out = []
+    for rank, team, played, pts in rows_:
+        out += [["", str(rank)], ["primary-text", team], ["SIText", f"{played} Maç"], ["", f"{pts} Pua"]]
+    return out
+
+
+def test_standings_from_live_table():
+    """Maç ekranındaki canlı tablo (gerçek kayıt biçimi): maç sonu sıralaması ve aynı anda oynanan maçlar."""
+    import match
+    rows = _derby_rows()
+    rows.insert(-1, {"type": "snap", "t": "90:00", "items": [
+        ["ClubHomeTeamText", "FB"], ["ClubAwayTeamText", "GS"],
+        ["primary-text", "Çaykur Rizespor"], ["primary-text", "1 - 2"], ["primary-text", "Samsunspor"],
+        ["primary-text", "Fenerbahçe"], ["primary-text", "2 - 1"], ["primary-text", "Galatasaray"],
+        ["primary-text", "Tümosan Konyaspor"], ["primary-text", "1 - 1"], ["primary-text", "Gaziantep FK"],
+        *_table_items([(1, "Samsunspor", 3, 7), (2, "Corendon Alanyaspor", 2, 6), (3, "Göztepe", 2, 6),
+                       (4, "Galatasaray", 3, 6), (5, "Çorum FK", 2, 4)]),
+        ["primary-text", "FENERBAHÇE"], ["primary-text", "GALATASARAY"]]})
+    s = match.mark_manager_team(match.summarize(rows), "Fenerbahçe")
+    assert s["puan_durumu"] == ("Maç sonu canlı tabloya göre Galatasaray 4. sırada (3 maçta 6 puan). "
+                                "Lider Samsunspor 7 puan, fark 1 puan.")
+    assert s["ayni_anda_oynanan_maclar"] == ["Çaykur Rizespor 1 - 2 Samsunspor", "Tümosan Konyaspor 1 - 1 Gaziantep FK"]
+
+
+def test_standings_leader_and_absent():
+    import match
+    leader = match._standings_sentence([(1, "Galatasaray", 3, 9), (2, "Samsunspor", 3, 7)], "Galatasaray (GS)")
+    assert leader == "Maç sonu canlı tabloya göre Galatasaray lider (3 maçta 9 puan). En yakın takipçi Samsunspor 7 puan, fark 2 puan."
+    assert match._standings_sentence([(1, "Samsunspor", 3, 7)], "Galatasaray (GS)") is None   # görünen satırlarda yok
+
+
+def test_meeting_kind_from_game_question():
+    """Basın toplantısı paneli maç öncesi/sonu ayırmıyor: oyunun sorusu ayırır."""
+    assert press.meeting_kind("Yarınki Trabzonspor maçı öncesi kadroda eksik var mı?") == "pre"
+    assert press.meeting_kind("Hafta sonu zorlu bir deplasmana gideceksiniz. Hazırlıklar nasıl gidiyor?") == "pre"
+    assert press.meeting_kind("Önemli bir derbiyi kaybettiniz, duygularınızı paylaşır mısınız?") == "post"
+    assert press.meeting_kind("Bugünkü sonuç sizi tatmin etti mi?") == "post"
+    assert press.meeting_kind("Yunus Akgün rekabete yabancı değil. Tutku ne kadar önemli?") is None
+
+
+def test_pre_match_press_conference_uses_previous_match(tmp_path, monkeypatch):
+    """Maç oynandıktan sonra bir sonraki maçın ÖNCESİNDEKİ basın toplantısı: biten maç 'geçen maç' olarak gider,
+    maç sonu toplantısı gibi sorulmaz (eskiden son 2 saatteki maç 'bugünkü maç' sayılıyordu)."""
+    import match
+    f = tmp_path / "match_20261121_2227_FB-GS.jsonl"
+    f.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in _derby_rows()), encoding="utf-8")
+    monkeypatch.setattr(match, "MATCH_DIR", str(tmp_path))
+    prompts = []
+    llm.set_mock(lambda p, t: prompts.append(p) or ({"question": "S", "event": "pre_match"} if t == "question" else
+                 {"category_index": 0, "option_index": 0, "display_text": "D", "follow_up": None}))
+    st = dict(load_states()[0], active=True, ready=True, screen="press_conference", match=None, opponent=None,
+              event_hint=None, game_question="Yarınki Gençlerbirliği maçı öncesi sakat oyuncularınızın durumu ne?")
+    s = PressSession(_FakeIO(st), lambda *a, **k: None, lambda abort: "cevap", follow_up_prob=0,
+                     log_dir=str(tmp_path / "logs"))
+    s.handle(st)
+    assert "GECEN_MAC" in prompts[0] and "Maç öncesi:" in prompts[0] and "TOPLANTI AKIŞI" not in prompts[0]
+    st2 = dict(st, question_id="q2", game_question="Taraftarlar bu sezon için umutlu. Siz ne düşünüyorsunuz?")
+    s.io = _FakeIO(st2)
+    prompts.clear()
+    s.handle(st2)                                                    # karar toplantı boyunca hatırlanır
+    assert "GECEN_MAC" in prompts[0]
+
+
+def test_style_by_event():
+    """Her etkinlik kendi gerçek soru kalıplarını alır: maç sonu flaş röportajı basın toplantısından ayrı."""
+    seen = {}
+    llm.set_mock(lambda p, t: seen.setdefault("p", p) and {"question": "S", "event": "post_match"})
+    for screen, marker in [("post_match_tunnel_interview", "saha kenarı (TV/flaş)"),
+                           ("press_conference", "TOPLANTI AKIŞI"), ("tunnel_interview", "Maç öncesi saha kenarı")]:
+        seen.clear()
+        press.generate_question({"game_question": "Maç nasıldı?", "screen": screen}, {"skor": "1 - 0"}, [])
+        assert marker in seen["p"], screen
+
+
+def test_dotless_i_team_names():
+    """'KASIMPAŞA'.title() -> 'Kasimpaşa' ama anlatım 'Kasımpaşa' yazar: kendi golü rakibe yazılmamalı."""
+    import match
+    s = {"takimlar": "Kasimpaşa (KAS) - Galatasaray (GS)", "skor": "1 - 0",
+         "goller": [{"dakika": "10", "takim": "Kasımpaşa", "golcu": "bilinmiyor (tahmin etme)"}]}
+    s = match.mark_manager_team(s, "Galatasaray")
+    assert s["teknik_direktorun_takimi"] == "Kasimpaşa (KAS)"
+    assert s["goller"][0]["kimin_golu"] == "teknik direktörün takımı attı"
+
+
+def test_previous_summary_skips_replayed_fixture(tmp_path, monkeypatch):
+    """Kaydedilmeden tekrar oynanan maç: son kayıt aynı rakibe karşıysa 'geçen maç' sayılmaz."""
+    import match
+    f = tmp_path / "match_20261119_1600_FB-GS.jsonl"
+    f.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in _derby_rows()), encoding="utf-8")
+    monkeypatch.setattr(match, "MATCH_DIR", str(tmp_path))
+    assert match.previous_summary(opponent="Fenerbahçe") is None
+    assert match.previous_summary(opponent="Trabzonspor")["skor"] == "2 - 1"
+
+
+def test_press_conference_without_opponent_uses_learned_team(tmp_path, monkeypatch):
+    """Basın toplantısında rakip adı gelmiyor: önceki röportajdan öğrenilen takım kullanılmalı."""
+    import match
+    f = tmp_path / "match_20261121_2227_FB-GS.jsonl"
+    f.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in _derby_rows()), encoding="utf-8")
+    monkeypatch.setattr(match, "MATCH_DIR", str(tmp_path))
+    prompts = []
+    llm.set_mock(lambda p, t: prompts.append(p) or ({"question": "S", "event": "post_match"} if t == "question" else
+                 {"category_index": 0, "option_index": 0, "display_text": "D", "follow_up": None}))
+    st = dict(load_states()[0], active=True, ready=True, screen="post_match_tunnel_interview", match=None,
+              opponent="Fenerbahçe")
+    s = PressSession(_FakeIO(st), lambda *a, **k: None, lambda abort: "cevap", follow_up_prob=0,
+                     log_dir=str(tmp_path / "logs"))
+    s.handle(st)
+    st2 = dict(st, screen="press_conference", opponent=None, question_id="pc1", event_hint=None)
+    s.io = _FakeIO(st2)
+    prompts.clear()
+    s.handle(st2)
+    assert '"teknik_direktorun_takimi": "Galatasaray (GS)"' in prompts[0]
 
 
 def test_cleanup(tmp_path, monkeypatch):
@@ -647,6 +905,67 @@ def test_name_hint():
     for w in ("Fenerbahçe", "Berkan", "Osimhen", "Uğurcan"):
         assert w in h
     assert "Hocam" not in h
+
+
+def test_name_hint_structured():
+    """İpucu maç verisinin rastgele büyük harfli kelimelerinden değil, isim alanlarından kurulur (2026-11-21: 'RAKİP,
+    Kurtarıyor, Sadece, Artık' ipucunu doldurup oyuncu adlarını dışarıda bırakıyordu; WER %27,8 -> %19,3)."""
+    import match
+    s = match.mark_manager_team(match.summarize(_derby_rows()), "Fenerbahçe")
+    s["puan_durumu"] = "Maç sonu canlı tabloya göre Galatasaray 4. sırada (3 maçta 6 puan). Lider Samsunspor 7 puan, fark 1 puan."
+    s["ayni_anda_oynanan_maclar"] = ["Çaykur Rizespor 1 - 2 Samsunspor"]
+    st = {"opponent": "Fenerbahçe", "competition": "Trendyol Süper Lig", "journalist": {"name": "Berkan Koç"}}
+    h = PressSession._name_hint(st, "Hocam, maçı nasıl değerlendiriyorsunuz?", {"GECEN_MAC (bugünkü maç DEĞİL)": s})
+    for w in ("Galatasaray", "Fenerbahçe", "Samsunspor", "Çaykur Rizespor", "Berkan Koç", "Osimhen", "Asensio"):
+        assert w in h, w
+    for junk in ("RAKİP", "Rakip", "Maç sonu", "Lider", "Hocam", "MAĞLUBİYET"):
+        assert junk not in h, junk
+
+
+def test_stt_groq_then_local_fallback(monkeypatch):
+    """Groq anahtarı varsa Groq Whisper (testte WER %9, 0,8 sn); hata/zaman aşımında yerel modele düşer."""
+    import numpy as np
+    import voice
+    sent = {}
+    class R:
+        status_code = 200
+        def json(self):
+            return {"text": " Golü Fenerbahçe attı. "}
+    def fake_post(url, headers=None, files=None, data=None, timeout=None):
+        sent.update(url=url, data=data, auth="Authorization" in headers)
+        return R()
+    monkeypatch.setattr(C, "STT_PROVIDER", "groq")
+    monkeypatch.setattr(C, "OPENAI_KEY", "test")
+    monkeypatch.setattr(voice.requests, "post", fake_post)
+    monkeypatch.setattr(voice, "_transcribe_local", lambda a, p: "YEREL")
+    voice.set_hint("Galatasaray, Fenerbahçe")
+    audio = np.zeros(16000, dtype=np.float32)
+    assert voice.transcribe(audio) == "Golü Fenerbahçe attı."
+    assert sent["data"]["model"] == "whisper-large-v3-turbo" and sent["data"]["language"] == "tr"
+    assert "Galatasaray" in sent["data"]["prompt"] and "Gol" in sent["data"]["prompt"] and sent["auth"]
+    def boom(*a, **k):
+        raise voice.requests.ConnectionError("internet yok")
+    monkeypatch.setattr(voice.requests, "post", boom)
+    assert voice.transcribe(audio) == "YEREL"
+    monkeypatch.setattr(C, "STT_PROVIDER", "local")
+    monkeypatch.setattr(voice.requests, "post", fake_post)
+    assert voice.transcribe(audio) == "YEREL"
+
+
+def test_display_text_never_adds_words():
+    """Ekrana yazılan cevap teknik direktöre söylemediği sözü atfetmemeli (2026-11-21 log'u: seçenek cümlesi eklendi)."""
+    said = "Önemli bir gol tabii ki ama günün sonunda bizim için kazanmaya yetmedi. Başka bir yolun yok."
+    bad = ("Önemli bir gol, ancak maçı kazanmak için yeterli olmadı. Fenerbahçe'yi tebrik ediyorum; kaybetmiş olsak "
+           "bile sahada güzel şeyler yaptık.")
+    assert press.adds_content(said, bad)
+    assert not press.adds_content(said, "Önemli bir gol tabii ki, ama günün sonunda kazanmaya yetmedi. Başka yolu yok.")
+    assert not press.adds_content("Bak on dokuzda golü Sıfener bahçı attı biz atmadık",       # duyma hatası düzeltmesi
+                                  "Bak, 19. dakikadaki golü Fenerbahçe attı, biz atmadık.")
+    st = load_states()[0]
+    llm.set_mock(lambda p, t: {"category_index": st["categories"][0]["index"], "option_index": 0,
+                               "display_text": bad, "follow_up": None})
+    r = press.classify_answer(st, "Soru?", "ııı " + said)
+    assert "tebrik" not in r["display_text"] and r["display_text"].startswith("Önemli bir gol")
 
 
 def test_settings_ini(tmp_path, monkeypatch):

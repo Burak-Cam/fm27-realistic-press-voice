@@ -147,7 +147,8 @@ def _openai(prompt: str, deadline: float | None = None) -> str:
                       "messages": [{"role": "user", "content": prompt}], **_reasoning(model)},
             )
             if model != models[0]:
-                print(f"  [llm] groq yedek model: {model}")
+                why = "; ".join(errors) or "ana model bekleme süresinde (önceki hata)"
+                print(f"  [llm] groq yedek model: {model} (sebep: {why[:200]})")
             return d["choices"][0]["message"]["content"]
         except requests.Timeout:
             _cooldown["oa:" + model] = time.time() + 60
@@ -157,7 +158,9 @@ def _openai(prompt: str, deadline: float | None = None) -> str:
         except LLMError as e:
             errors.append(f"{model}: {e}")
             if re.search(r"\b(404|429|500|503)\b", str(e)):
-                _cooldown["oa:" + model] = time.time() + (86400 if re.search(r"\b404\b", str(e)) else C.MODEL_COOLDOWN)
+                # 404 = model yok (1 gün); 429 = Groq dakikalık token sınırı, bir dakikada açılır; diğerleri MODEL_COOLDOWN
+                wait = 86400 if re.search(r"\b404\b", str(e)) else 60 if re.search(r"\b429\b", str(e)) else C.MODEL_COOLDOWN
+                _cooldown["oa:" + model] = time.time() + wait
             elif re.search(r"\b(401|403)\b", str(e)):
                 break
         except (KeyError, IndexError) as e:
@@ -182,30 +185,63 @@ def ask(prompt: str, task: str = "", budget: float | None = None) -> dict:
     (çağıran yedeğe düşer). Tüm sağlayıcılar başarısızsa LLMError."""
     errors = []
     deadline = time.time() + budget if budget else None
-    for p in C.PROVIDERS:
-        t0 = time.time()
-        if deadline and t0 >= deadline:
-            errors.append(f"{p}: süre doldu")
-            break
-        try:
-            if p == "mock":
-                if _mock_handler is None:
-                    raise LLMError("mock tanımlı değil")
-                return _mock_handler(prompt, task)
-            if p == "gemini":
-                text = _gemini(prompt, deadline)
-            elif p == "openai":
-                text = _openai(prompt, deadline)
-            else:
-                text = {"ollama": _ollama}[p](prompt)
-            out = parse_json(text)
-            print(f"  [llm] {p} {task} {time.time() - t0:.1f} sn")
-            return out
-        except KeyError:
-            errors.append(f"{p}: bilinmeyen sağlayıcı")
-        except (LLMError, requests.RequestException, ValueError) as e:
-            errors.append(f"{p}: {e}")
+    if "mock" in C.PROVIDERS:
+        if _mock_handler is None:
+            raise LLMError("mock tanımlı değil")
+        return _mock_handler(prompt, task)
+    # Kademeli paralel: ana sağlayıcı LLM_HEDGE_SEC içinde cevap vermezse (ya da hata verirse) sıradakine de sorulur,
+    # ilk geçerli cevap kullanılır. 2026-11-21: Gemini ana (doğru), Groq qwen yedek (hızlı ama ücretsiz katmanda
+    # dakikada 7000 girdi token = ~2 soru; düşünmesiz modda golleri/sonucu karıştırıyordu).
+    providers = list(C.PROVIDERS)
+    end = deadline or time.time() + 60
+    pool = ThreadPoolExecutor(max_workers=max(1, len(providers)))
+    running, started, nxt = {}, {}, 0
+
+    def launch():
+        nonlocal nxt
+        p = providers[nxt]
+        nxt += 1
+        started[p] = time.time()
+        running[pool.submit(_call_provider, p, prompt, deadline)] = p
+
+    try:
+        launch()
+        hedge_at = time.time() + C.LLM_HEDGE_SEC
+        while running or nxt < len(providers):
+            now = time.time()
+            if now >= end:
+                errors.append("süre doldu")
+                break
+            if not running:                        # hepsi hata verdi ama sırada sağlayıcı var
+                launch()
+                hedge_at = time.time() + C.LLM_HEDGE_SEC
+                continue
+            wake = min(end, hedge_at) if nxt < len(providers) else end
+            done, _ = wait(list(running), timeout=max(0.0, wake - now), return_when=FIRST_COMPLETED)
+            for f in done:
+                p = running.pop(f)
+                try:
+                    out = parse_json(f.result())
+                    print(f"  [llm] {p} {task} {time.time() - started[p]:.1f} sn")
+                    return out
+                except KeyError:
+                    errors.append(f"{p}: bilinmeyen sağlayıcı")
+                except (LLMError, requests.RequestException, ValueError) as e:
+                    errors.append(f"{p}: {e}")
+            if not done and nxt < len(providers) and time.time() >= hedge_at:
+                launch()                           # ana sağlayıcı yavaş: sıradakine de sor
+                hedge_at = time.time() + C.LLM_HEDGE_SEC
+    finally:
+        pool.shutdown(wait=False, cancel_futures=True)
     raise LLMError(" | ".join(errors) or "sağlayıcı yok")
+
+
+def _call_provider(p: str, prompt: str, deadline: float | None) -> str:
+    if p == "gemini":
+        return _gemini(prompt, deadline)
+    if p == "openai":
+        return _openai(prompt, deadline)
+    return {"ollama": _ollama}[p](prompt)
 
 
 def list_gemini_models() -> list[str]:

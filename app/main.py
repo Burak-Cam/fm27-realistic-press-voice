@@ -109,8 +109,9 @@ def cmd_check(a):
     st = BridgeIO().read_state()
     print(f"press_state   : {'yok (eklenti henüz yazmadı / oyun kapalı)' if st is None else ('aktif' if st.get('active') else 'pasif') + ' seq=' + str(st.get('seq'))}")
     print(f"LLM sırası    : {C.PROVIDERS}")
+    print(f"Konuşma tanıma: {'Groq ' + C.GROQ_STT_MODEL + ' (yedek: yerel ' + C.WHISPER_MODEL + ')' if C.STT_PROVIDER == 'groq' and C.OPENAI_KEY else 'yerel ' + C.WHISPER_MODEL}")
     print(f"GEMINI_API_KEY: {'var' if C.GEMINI_KEY else 'YOK'}  model={C.GEMINI_MODEL}")
-    print(f"GROQ/OPENAI   : {'var' if C.OPENAI_KEY else 'YOK'}  {C.OPENAI_MODEL} (yedek: {', '.join(C.OPENAI_FALLBACK_MODELS)})")
+    print(f"GROQ/OPENAI   : {'var' if C.OPENAI_KEY else 'YOK'}  {C.OPENAI_MODEL} (yedek: {', '.join(C.OPENAI_FALLBACK_MODELS) or 'yok, Gemini'})")
     if C.GEMINI_KEY:
         try:
             from llm import list_gemini_models

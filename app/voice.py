@@ -5,7 +5,11 @@ import tempfile
 import threading
 import time
 
+import io
+import wave
+
 import numpy as np
+import requests
 
 import config as C
 import status
@@ -267,20 +271,64 @@ def load_stt():
 _hint = ""
 
 
+# Whisper ipucu: bağlam cümlesi + futbol kelimeleri ("gol" -> "kol" hatası) + o anki maçın isimleri.
+# Whisper ipucunun son ~224 token'ını kullanır: isimler sona, en fazla ~450 karakter.
+STT_VOCAB = ("Futbol basın toplantısında teknik direktörün cevabı. Gol, penaltı, ofsayt, hakem, VAR, korner, sarı kart, "
+             "kırmızı kart, derbi, deplasman, taraftar, galibiyet, mağlubiyet, beraberlik, puan.")
+
+
 def set_hint(text: str):
-    """Sonraki dökümler için ipucu: o anki maçın özel isimleri (rakip, oyuncular, gazeteci). Whisper isimleri doğru yazar."""
+    """Sonraki dökümler için ipucu: o anki maçın özel isimleri (takımlar, oyuncular, gazeteci). Whisper isimleri doğru yazar."""
     global _hint
-    _hint = (text or "")[:220]
+    _hint = (text or "")[:450]
+
+
+def _prompt() -> str:
+    return f"{STT_VOCAB} {_hint}.".strip() if _hint else STT_VOCAB
+
+
+def _wav_bytes(audio: np.ndarray) -> bytes:
+    b = io.BytesIO()
+    with wave.open(b, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(SR)
+        w.writeframes((np.clip(audio, -1, 1) * 32767).astype(np.int16).tobytes())
+    return b.getvalue()
+
+
+def _transcribe_groq(audio, prompt: str) -> str:
+    if isinstance(audio, np.ndarray):
+        name, data, mime = "cevap.wav", _wav_bytes(audio), "audio/wav"
+    else:
+        name, mime = os.path.basename(audio), "application/octet-stream"
+        with open(audio, "rb") as fh:
+            data = fh.read()
+    r = requests.post(f"{C.OPENAI_BASE}/audio/transcriptions", headers={"Authorization": f"Bearer {C.OPENAI_KEY}"},
+                      files={"file": (name, data, mime)},
+                      data={"model": C.GROQ_STT_MODEL, "language": "tr", "prompt": prompt, "response_format": "json",
+                            "temperature": "0"}, timeout=C.GROQ_STT_TIMEOUT)
+    if r.status_code != 200:
+        raise RuntimeError(f"HTTP {r.status_code}")
+    return (r.json().get("text") or "").strip()
+
+
+def _transcribe_local(audio, prompt: str) -> str:
+    segs, _ = load_stt().transcribe(audio, language="tr", vad_filter=True, beam_size=C.WHISPER_BEAM, initial_prompt=prompt)
+    return " ".join(s.text.strip() for s in segs).strip()
 
 
 def transcribe(audio) -> str:
-    """audio: 16 kHz mono float32 dizi ya da ses dosyası yolu."""
+    """audio: 16 kHz mono float32 dizi ya da ses dosyası yolu. Groq varsa önce Groq, olmazsa yerel model."""
     if audio is None or (isinstance(audio, np.ndarray) and audio.size < SR * 0.3):
         return ""
-    segs, _ = load_stt().transcribe(audio, language="tr", vad_filter=True, beam_size=C.WHISPER_BEAM,
-                                    initial_prompt=("Futbol basın toplantısında teknik direktörün cevabı. Derbi, deplasman, taraftar, camia. "
-                                                    + _hint).strip())
-    return " ".join(s.text.strip() for s in segs).strip()
+    prompt = _prompt()
+    if C.STT_PROVIDER == "groq" and C.OPENAI_KEY:
+        try:
+            return _transcribe_groq(audio, prompt)
+        except Exception as e:                      # ağ, kota (429), zaman aşımı: cevabı kaybetme, yerelde dök
+            print(f"  [stt] Groq olmadı ({type(e).__name__}: {str(e)[:80]}), yerel model kullanılıyor")
+    return _transcribe_local(audio, prompt)
 
 
 # ---------------- Bas-konuş ----------------

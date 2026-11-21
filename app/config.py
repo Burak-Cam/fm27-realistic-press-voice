@@ -10,8 +10,10 @@ POLL_SEC = 0.3
 
 # ---------------- LLM ----------------
 # Sırayla denenir; kota/ağ hatasında sıradakine geçilir. Seçenekler: gemini | openai | ollama | mock
-# Groq anahtarı varsa önce Groq (ölçüm 2026-11-19: 0,3-1 sn; Gemini ücretsiz katman yoğunken 5-25 sn), sonra Gemini.
-_DEFAULT_PROVIDERS = "openai,gemini" if os.getenv("OPENAI_API_KEY", os.getenv("GROQ_API_KEY", "")) else "gemini,openai"
+# 2026-11-21: Gemini önce (aynı veriyle hep doğru soru), Groq qwen yedek + hız sigortası (Gemini LLM_HEDGE_SEC'te
+# cevap vermezse paralel sorulur). qwen ana model olamaz: ücretsiz katman dakikada 7000 girdi token (~2 soru prompt'u)
+# ve düşünmesiz modda golleri/sonucu karıştırıyordu. Gemini anahtarı yoksa Groq tek başına.
+_DEFAULT_PROVIDERS = "gemini,openai" if os.getenv("GEMINI_API_KEY", "") else "openai,gemini"
 PROVIDERS = [p.strip() for p in os.getenv("FM_LLM_PROVIDERS", os.getenv("FM_LLM_PROVIDER", _DEFAULT_PROVIDERS)).split(",") if p.strip()]
 
 GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -25,7 +27,9 @@ OPENAI_BASE = os.getenv("OPENAI_BASE", "https://api.groq.com/openai/v1")
 OPENAI_KEY = os.getenv("OPENAI_API_KEY", os.getenv("GROQ_API_KEY", ""))
 # Groq'taki modeller değişiyor (llama-3.3-70b kaldırıldı). qwen3.8-27b: Türkçesi iyi, talimata uyuyor, ~0,4 sn.
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "qwen/qwen3.8-27b")
-OPENAI_FALLBACK_MODELS = [m.strip() for m in os.getenv("OPENAI_FALLBACK_MODELS", "openai/gpt-oss-20b").split(",") if m.strip()]
+# Varsayılan yedek YOK (qwen düşerse doğrudan Gemini): gpt-oss-20b 2026-11-21 testinde golleri yanlış tarafa yazdı
+# ("2-1'lik galibiyetiniz", rakibin golüne "golünüz"); Gemini aynı veriyle doğru soru üretti.
+OPENAI_FALLBACK_MODELS = [m.strip() for m in os.getenv("OPENAI_FALLBACK_MODELS", "").split(",") if m.strip()]
 OPENAI_TIMEOUT = float(os.getenv("FM_OPENAI_TIMEOUT", "4"))   # Groq normalde <1 sn; takılırsa Gemini'ye zaman kalsın
 
 OLLAMA_URL = os.getenv("OLLAMA_URL", "http://localhost:11434")
@@ -50,7 +54,13 @@ GOOGLE_TTS_KEY = os.getenv("GOOGLE_TTS_API_KEY", "")
 # 0 TL garantisi: uygulama bu sınırlara gelince Chirp'e istek ATMAZ, edge-tts'e düşer (logs/tts_usage.json sayar).
 CHIRP_MONTHLY_CHARS = int(os.getenv("FM_CHIRP_MONTHLY_CHARS", "500000"))   # ücretsiz kotanın yarısı (1M varsayımı)
 CHIRP_DAILY_CHARS = int(os.getenv("FM_CHIRP_DAILY_CHARS", "40000"))        # kaçak döngüye karşı günlük sınır  # basın toplantısı moderatörü
-WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small")    # small | medium
+# Konuşma tanıma: Groq anahtarı varsa Groq Whisper (2026-11-21 ölçümü, 24 gürültülü Türkçe cevap: large-v3-turbo
+# WER %9,3 / 0,8 sn; yerel small %19,3 / 2,5 sn). Ücretsiz katman: dakikada 20 istek, saatte 7200 ses saniyesi
+# (istek başına en az 10 sn sayılır = saatte ~720 cevap). Hata/zaman aşımı/internet yoksa yerel modele düşer.
+STT_PROVIDER = os.getenv("FM_STT", "groq" if os.getenv("OPENAI_API_KEY", os.getenv("GROQ_API_KEY", "")) else "local")
+GROQ_STT_MODEL = os.getenv("GROQ_STT_MODEL", "whisper-large-v3-turbo")
+GROQ_STT_TIMEOUT = float(os.getenv("FM_GROQ_STT_TIMEOUT", "6"))
+WHISPER_MODEL = os.getenv("WHISPER_MODEL", "small")    # small | medium (yerel yedek)
 WHISPER_DEVICE = os.getenv("WHISPER_DEVICE", "cpu")    # GPU FM27 ile paylaşılıyor -> varsayılan CPU int8
 WHISPER_BEAM = int(os.getenv("WHISPER_BEAM", "1"))     # 1: ~2 sn, 5: ~12 sn (CPU, 7 sn ses), doğruluk testte aynı
 # Bas-konuş tuşu (keyboard kütüphanesi adı). Cevap beklenirken tuş oyuna GİTMEZ (suppress), diğer zamanlarda serbest.

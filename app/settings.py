@@ -11,6 +11,7 @@ PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.ini")
 # ini anahtarı -> ortam değişkeni
 KEYS = {
     "oyun_klasoru": "FM_GAME_DIR",
+    "konusma_tanima": "FM_STT",
     "bas_konus_tusu": "FM_HOTKEY",
     "mikrofon": "FM_MIC",
     "hoparlor": "FM_SPEAKER",
